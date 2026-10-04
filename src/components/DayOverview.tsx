@@ -76,6 +76,14 @@ type DayTask = {
   overdue?: boolean;
 };
 
+type RoutineBlock = {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  detail: string;
+};
+
 const CALENDAR_KEY = "jan-os-calendar-events-v1";
 const SOCIAL_KEY = "jan-os-social-contacts-v1";
 const FINANCE_KEY = "jan-os-finance-v2";
@@ -132,6 +140,32 @@ function euro(value: number) {
   }).format(value);
 }
 
+function routineForDate(date: Date): RoutineBlock[] {
+  const day = date.getDay();
+
+  if (day >= 1 && day <= 4) {
+    return [{
+      id: "routine-work-study",
+      title: "Arbeit / Lernen",
+      start: "08:00",
+      end: "16:00",
+      detail: "Fester Strukturblock · Montag bis Donnerstag"
+    }];
+  }
+
+  if (day === 5) {
+    return [{
+      id: "routine-work-study",
+      title: "Arbeit / Lernen",
+      start: "08:00",
+      end: "14:00",
+      detail: "Fester Strukturblock · Freitag"
+    }];
+  }
+
+  return [];
+}
+
 export function DayOverview() {
   const [planning, setPlanning] = useState<PlanningItem[]>([]);
   const [manualEvents, setManualEvents] = useState<ManualCalendarEvent[]>([]);
@@ -144,6 +178,8 @@ export function DayOverview() {
   const tomorrowDate = new Date(now);
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrow = dateKey(tomorrowDate);
+  const todayRoutine = useMemo(() => routineForDate(now), [today]);
+  const tomorrowRoutine = useMemo(() => routineForDate(tomorrowDate), [tomorrow]);
 
   function refresh() {
     setPlanning(readPlanningItems());
@@ -213,6 +249,23 @@ export function DayOverview() {
     [linkedToday, manualToday]
   );
 
+  const daySchedule = useMemo(
+    () => [
+      ...todayRoutine.map(block => ({
+        id: block.id,
+        title: block.title,
+        start: block.start,
+        end: block.end,
+        source: "Routine",
+        sourceLabel: block.detail,
+        kind: "Routine" as const,
+        routine: true as const
+      })),
+      ...events.map(event => ({ ...event, routine: false as const }))
+    ].sort((a, b) => (a.start || "99:99").localeCompare(b.start || "99:99")),
+    [todayRoutine, events]
+  );
+
   const tasks = useMemo<DayTask[]>(() => {
     const result: DayTask[] = [];
 
@@ -272,6 +325,11 @@ export function DayOverview() {
   );
 
   const tomorrowEvents = useMemo(() => {
+    const routine = tomorrowRoutine.map(item => ({
+      title: item.title,
+      start: item.start,
+      source: item.detail
+    }));
     const linked = planning.filter(item => occursOn(item, tomorrow)).map(item => ({
       title: item.title,
       start: item.start,
@@ -282,26 +340,29 @@ export function DayOverview() {
       start: item.start,
       source: item.category
     }));
-    return [...linked, ...manual].sort((a, b) => (a.start || "99:99").localeCompare(b.start || "99:99")).slice(0, 4);
-  }, [planning, manualEvents, tomorrow]);
+    return [...routine, ...linked, ...manual]
+      .sort((a, b) => (a.start || "99:99").localeCompare(b.start || "99:99"))
+      .slice(0, 4);
+  }, [planning, manualEvents, tomorrow, tomorrowRoutine]);
 
   const nextEvent = useMemo(() => {
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    return events.find(event => event.start && event.start >= time) ?? events.find(event => !event.start) ?? null;
-  }, [events, now]);
+    return daySchedule.find(event => event.start && event.start >= time) ?? daySchedule.find(event => !event.start) ?? null;
+  }, [daySchedule, now]);
 
   const summary = useMemo(() => {
-    if (!events.length && !tasks.length && !socialFocus.length && !todayPayments.length) {
+    if (!daySchedule.length && !tasks.length && !socialFocus.length && !todayPayments.length) {
       return "Heute ist in JAN OS noch nichts Dringendes hinterlegt. Der Tag ist frei planbar.";
     }
 
     const bits = [];
+    if (todayRoutine.length) bits.push("feste Tagesstruktur aktiv");
     if (events.length) bits.push(`${events.length} Termin${events.length === 1 ? "" : "e"}`);
     if (tasks.length) bits.push(`${tasks.length} offene${tasks.length === 1 ? "r Punkt" : " Punkte"}`);
     if (socialFocus.length) bits.push(`${socialFocus.length} Kontakt${socialFocus.length === 1 ? "" : "e"} im Blick`);
     if (todayPayments.length) bits.push(`${todayPayments.length} Belastung${todayPayments.length === 1 ? "" : "en"}`);
     return "Heute: " + bits.join(", ") + ".";
-  }, [events, tasks, socialFocus, todayPayments]);
+  }, [daySchedule, todayRoutine, events, tasks, socialFocus, todayPayments]);
 
   return (
     <>
@@ -330,8 +391,12 @@ export function DayOverview() {
                 {nextEvent.start ? nextEvent.start + (nextEvent.end ? "–" + nextEvent.end : "") + " Uhr" : "ganztägig"}
                 {" · "}{nextEvent.sourceLabel}
               </p>
-              {nextEvent.location ? <span className="day-location">{nextEvent.location}</span> : null}
-              <Link href={sourceHref(nextEvent.source)}>Details öffnen <ArrowRight size={14} /></Link>
+              {"location" in nextEvent && nextEvent.location ? <span className="day-location">{nextEvent.location}</span> : null}
+              {nextEvent.source !== "Routine" ? (
+                <Link href={sourceHref(nextEvent.source)}>Details öffnen <ArrowRight size={14} /></Link>
+              ) : (
+                <span className="day-routine-label">Fester Tagesblock</span>
+              )}
             </>
           ) : tasks[0] ? (
             <>
@@ -359,28 +424,34 @@ export function DayOverview() {
               <div><span className="section-kicker">ZEITLICH</span><h2>Dein Tagesablauf</h2></div>
               <Link href="/kalender">Kalender <ChevronRight size={14} /></Link>
             </div>
-            {events.length ? (
+            {daySchedule.length ? (
               <div className="day-timeline">
-                {events.map(event => (
-                  <div className="day-timeline-row" key={event.id}>
+                {daySchedule.map(event => (
+                  <div className={`day-timeline-row ${event.routine ? "routine" : ""}`} key={event.id}>
                     <time>{event.start || "Tag"}</time>
                     <span className={"day-timeline-dot " + event.source.toLowerCase()} />
                     <div>
                       <div className="day-timeline-title">
                         <strong>{event.title}</strong>
-                        {event.status === "option" ? <span>Option</span> : null}
+                        {"status" in event && event.status === "option" ? <span>Option</span> : null}
+                        {event.routine ? <span className="routine-badge">Struktur</span> : null}
                       </div>
-                      <small>{event.sourceLabel}{event.location ? " · " + event.location : ""}</small>
-                      {event.briefing?.recommendation ? (
+                      <small>
+                        {event.sourceLabel}
+                        {"location" in event && event.location ? " · " + event.location : ""}
+                      </small>
+                      {"briefing" in event && event.briefing?.recommendation ? (
                         <p><Sparkles size={12} /> {event.briefing.recommendation}</p>
                       ) : null}
                     </div>
-                    <Link href={sourceHref(event.source)} aria-label={event.title + " öffnen"}><ChevronRight size={16} /></Link>
+                    {event.routine ? <span className="day-routine-lock">fix</span> : (
+                      <Link href={sourceHref(event.source)} aria-label={event.title + " öffnen"}><ChevronRight size={16} /></Link>
+                    )}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="day-empty"><CalendarDays size={20} /><strong>Keine Termine</strong><span>Heute ist zeitlich noch nichts fest eingeplant.</span></div>
+              <div className="day-empty"><CalendarDays size={20} /><strong>Keine feste Tagesstruktur</strong><span>Für diesen Wochentag ist noch kein Grundablauf definiert.</span></div>
             )}
           </article>
 

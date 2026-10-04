@@ -437,39 +437,65 @@ export function CalendarContent() {
       </section>
 
       {briefingItem?.eventBriefing ? (
-        <section className="event-briefing">
+        <section className="event-briefing compact">
           <div className="event-briefing-head">
             <div>
-              <span className="section-kicker">INTELLIGENTES EVENT-BRIEFING</span>
+              <span className="section-kicker">EVENT-BRIEFING</span>
               <h2>{briefingItem.title}</h2>
               <p>{briefingItem.eventBriefing.headline ?? briefingItem.eventBriefing.summary}</p>
             </div>
-            <span className="event-briefing-badge"><Sparkles size={14} /> recherchiert</span>
+            <span className="event-briefing-badge"><Sparkles size={14} /> vorbereitet</span>
           </div>
 
-          <div className="event-briefing-grid">
-            <article className="event-briefing-card">
-              <div className="event-briefing-card-head"><TicketCheck size={18} /><strong>Das Wichtigste</strong></div>
-              <div className="event-briefing-facts">
-                {(briefingItem.eventBriefing.facts ?? []).map(fact => (
-                  <div key={fact.label}><span>{fact.label}</span><strong>{fact.value}</strong></div>
+          <div className="event-briefing-summary">
+            {(briefingItem.eventBriefing.facts ?? []).slice(0, 4).map(fact => (
+              <div key={fact.label}>
+                <span>{fact.label}</span>
+                <strong>{fact.value}</strong>
+              </div>
+            ))}
+          </div>
+
+          <div className="event-briefing-recommendation">
+            <Sparkles size={18} />
+            <div>
+              <span>MEIN RAT</span>
+              <strong>{briefingItem.eventBriefing.recommendation}</strong>
+            </div>
+          </div>
+
+          {(briefingItem.eventBriefing.checklist ?? []).find(item => item.status !== "done") ? (
+            <div className="event-next-action">
+              <CheckCircle2 size={16} />
+              <div>
+                <span>ALS NÄCHSTES</span>
+                <strong>{(briefingItem.eventBriefing.checklist ?? []).find(item => item.status !== "done")?.label}</strong>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="event-briefing-sections">
+            <details open>
+              <summary>
+                <span><TicketCheck size={16} /> Vorbereitung</span>
+                <ChevronRight size={15} />
+              </summary>
+              <div className="event-briefing-checks">
+                {(briefingItem.eventBriefing.checklist ?? []).map(item => (
+                  <div key={item.id}>
+                    <span className={item.status === "done" ? "done" : ""}>{item.status === "done" ? "✓" : ""}</span>
+                    <div><strong>{item.label}</strong>{item.detail ? <small>{item.detail}</small> : null}</div>
+                  </div>
                 ))}
               </div>
-            </article>
-
-            <article className="event-briefing-card recommendation">
-              <div className="event-briefing-card-head"><Sparkles size={18} /><strong>Meine Empfehlung</strong></div>
-              <p>{briefingItem.eventBriefing.recommendation}</p>
-              {(briefingItem.eventBriefing.tips ?? []).length ? (
-                <div className="event-briefing-tips">
-                  {(briefingItem.eventBriefing.tips ?? []).map(tip => <span key={tip}>{tip}</span>)}
-                </div>
-              ) : null}
-            </article>
+            </details>
 
             {briefingItem.eventBriefing.travel ? (
-              <article className="event-briefing-card">
-                <div className="event-briefing-card-head"><MapPin size={18} /><strong>Anreise</strong></div>
+              <details>
+                <summary>
+                  <span><MapPin size={16} /> Anreise</span>
+                  <ChevronRight size={15} />
+                </summary>
                 <div className="event-briefing-travel">
                   <div><span>Start</span><strong>{briefingItem.eventBriefing.travel.origin}</strong></div>
                   <div><span>Ziel</span><strong>{briefingItem.eventBriefing.travel.destination}</strong></div>
@@ -479,20 +505,29 @@ export function CalendarContent() {
                     {briefingItem.eventBriefing.travel.clinicTravelUrl ? <a href={briefingItem.eventBriefing.travel.clinicTravelUrl} target="_blank" rel="noreferrer">Veranstalter-Info <ExternalLink size={12} /></a> : null}
                   </div>
                 </div>
-              </article>
+              </details>
             ) : null}
 
-            <article className="event-briefing-card">
-              <div className="event-briefing-card-head"><CheckCircle2 size={18} /><strong>Vorher erledigen</strong></div>
-              <div className="event-briefing-checks">
-                {(briefingItem.eventBriefing.checklist ?? []).map(item => (
-                  <div key={item.id}>
-                    <span className={item.status === "done" ? "done" : ""}>{item.status === "done" ? "✓" : ""}</span>
-                    <div><strong>{item.label}</strong>{item.detail ? <small>{item.detail}</small> : null}</div>
+            {(briefingItem.eventBriefing.tips ?? []).length || (briefingItem.eventBriefing.facts ?? []).length > 4 ? (
+              <details>
+                <summary>
+                  <span><Sparkles size={16} /> Weitere Hinweise</span>
+                  <ChevronRight size={15} />
+                </summary>
+                {(briefingItem.eventBriefing.tips ?? []).length ? (
+                  <div className="event-briefing-tips">
+                    {(briefingItem.eventBriefing.tips ?? []).map(tip => <span key={tip}>{tip}</span>)}
                   </div>
-                ))}
-              </div>
-            </article>
+                ) : null}
+                {(briefingItem.eventBriefing.facts ?? []).length > 4 ? (
+                  <div className="event-briefing-facts secondary">
+                    {(briefingItem.eventBriefing.facts ?? []).slice(4).map(fact => (
+                      <div key={fact.label}><span>{fact.label}</span><strong>{fact.value}</strong></div>
+                    ))}
+                  </div>
+                ) : null}
+              </details>
+            ) : null}
           </div>
 
           <div className="event-briefing-footer">

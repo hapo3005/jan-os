@@ -44,6 +44,7 @@ const STORAGE_KEY = "jan-os-goals-v2";
 const LEGACY_KEY = "jan-os-goals-v1";
 
 const horizonOrder: GoalHorizon[] = ["30 Tage", "90 Tage", "6 Monate", "1 Jahr", "5 Jahre"];
+const strategyOrder: GoalHorizon[] = ["5 Jahre", "1 Jahr", "6 Monate", "90 Tage", "30 Tage"];
 const areaOptions: GoalArea[] = ["Leben", "Gesundheit", "Finanzen", "KISS", "Projekte"];
 
 const horizonCopy: Record<GoalHorizon, string> = {
@@ -247,6 +248,11 @@ export function GoalsContent() {
     [sortedGoals]
   );
 
+  const recommendedHorizon = useMemo<GoalHorizon>(() => {
+    const activeHorizons = new Set(goals.filter(goal => goal.status !== "erreicht").map(goal => goal.horizon));
+    return strategyOrder.find(horizon => !activeHorizons.has(horizon)) ?? "30 Tage";
+  }, [goals]);
+
   const strategicChains = useMemo(
     () => fiveYearGoals.map(root => ({
       root,
@@ -298,38 +304,48 @@ export function GoalsContent() {
         </article>
       </section>
 
-      <section className="goals-horizon-panel">
-        <div className="goals-panel-head">
+      <section className="goals-roadmap-panel">
+        <div className="goals-roadmap-intro">
           <div>
-            <span className="section-kicker">ZEITHORIZONTE</span>
-            <h2>Vom nächsten Monat bis zu fünf Jahren</h2>
+            <span className="section-kicker">SO FUNKTIONIERT ES</span>
+            <h2>Von der Richtung zur nächsten Handlung</h2>
+            <p>Beginne langfristig und brich die Richtung Schritt für Schritt herunter. Du kannst jeden Horizont anklicken, um nur diese Ebene zu sehen.</p>
           </div>
-          <button
-            type="button"
-            className={activeHorizon === "Alle" ? "active" : ""}
-            onClick={() => setActiveHorizon("Alle")}
-          >
-            Alle Ziele
+          <button type="button" onClick={() => openNew(recommendedHorizon)}>
+            <Plus size={14} /> {goals.length ? recommendedHorizon + "-Ziel ergänzen" : "Mit 5 Jahren starten"}
           </button>
         </div>
 
-        <div className="goals-horizon-grid">
-          {horizonOrder.map(horizon => {
+        <div className="goals-roadmap">
+          {strategyOrder.map((horizon, index) => {
             const count = goals.filter(goal => goal.horizon === horizon && goal.status !== "erreicht").length;
+            const isRecommended = horizon === recommendedHorizon;
             return (
-              <button
-                type="button"
-                key={horizon}
-                className={activeHorizon === horizon ? "goals-horizon-card active" : "goals-horizon-card"}
-                onClick={() => setActiveHorizon(horizon)}
-              >
-                <span>{horizonCopy[horizon]}</span>
-                <strong>{horizon}</strong>
-                <small>{count} offene{count === 1 ? "s Ziel" : " Ziele"}</small>
-                <ChevronRight size={15} />
-              </button>
+              <div className="goals-roadmap-step" key={horizon}>
+                <button
+                  type="button"
+                  className={activeHorizon === horizon ? "active" : ""}
+                  onClick={() => setActiveHorizon(horizon)}
+                >
+                  <span className="goals-roadmap-number">{index + 1}</span>
+                  <div>
+                    <small>{horizonCopy[horizon]}</small>
+                    <strong>{horizon}</strong>
+                    <span>{count ? count + " offene Ziele" : "noch leer"}</span>
+                  </div>
+                  {isRecommended ? <b>Als Nächstes</b> : <ChevronRight size={15} />}
+                </button>
+                {index < strategyOrder.length - 1 ? <span className="goals-roadmap-arrow">→</span> : null}
+              </div>
             );
           })}
+        </div>
+
+        <div className="goals-roadmap-footer">
+          <button type="button" className={activeHorizon === "Alle" ? "active" : ""} onClick={() => setActiveHorizon("Alle")}>
+            Alle Ziele gemeinsam anzeigen
+          </button>
+          <span>5 Jahre geben die Richtung vor · 30 Tage erzeugen konkrete Bewegung</span>
         </div>
       </section>
 
@@ -542,6 +558,7 @@ function GoalForm({
   const [status, setStatus] = useState<GoalStatus>(initial?.status ?? "aktiv");
   const [parentGoalId, setParentGoalId] = useState(initial?.parentGoalId ?? "");
   const [area, setArea] = useState<GoalArea>(initial?.area ?? "Leben");
+  const [step, setStep] = useState(1);
 
   const parentCandidates = useMemo(
     () => goals.filter(goal =>
@@ -593,55 +610,106 @@ function GoalForm({
           <button type="button" onClick={onClose} aria-label="Schließen"><X size={18} /></button>
         </div>
 
-        <div className="goal-form-grid">
-          <label className="wide"><span>Ziel</span><input autoFocus value={title} onChange={event => setTitle(event.target.value)} placeholder="Was soll konkret erreicht werden?" /></label>
-          <label>
-            <span>Zeithorizont</span>
-            <select value={horizon} onChange={event => changeHorizon(event.target.value as GoalHorizon)}>
-              {horizonOrder.map(item => <option key={item}>{item}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Lebensbereich</span>
-            <select value={area} onChange={event => setArea(event.target.value as GoalArea)}>
-              {areaOptions.map(item => <option key={item}>{item}</option>)}
-            </select>
-          </label>
-          <label><span>Zieldatum</span><input type="date" value={targetDate} onChange={event => setTargetDate(event.target.value)} /></label>
-          <label>
-            <span>Strategische Verbindung</span>
-            <select value={parentGoalId} onChange={event => setParentGoalId(event.target.value)} disabled={horizon === "5 Jahre"}>
-              <option value="">{horizon === "5 Jahre" ? "Strategische Richtung" : "Eigenständiges Ziel"}</option>
-              {parentCandidates.map(goal => <option value={goal.id} key={goal.id}>{goal.horizon} · {goal.title}</option>)}
-            </select>
-          </label>
-          <label className="wide"><span>Messbares Ergebnis</span><input value={result} onChange={event => setResult(event.target.value)} placeholder="Woran erkennst du eindeutig, dass das Ziel erreicht ist?" /></label>
-          <label className="wide"><span>Nächster konkreter Schritt</span><input value={nextStep} onChange={event => setNextStep(event.target.value)} placeholder="Was ist die nächste Handlung?" /></label>
-          <label><span>Fortschritt %</span><input type="number" min="0" max="100" value={progress} onChange={event => setProgress(event.target.value)} /></label>
-          <label>
-            <span>Status</span>
-            <select value={status} onChange={event => setStatus(event.target.value as GoalStatus)}>
-              <option value="aktiv">Aktiv</option>
-              <option value="wartet">Wartet</option>
-              <option value="erreicht">Erreicht</option>
-            </select>
-          </label>
+        <div className="goal-wizard-progress">
+          <span className={step >= 1 ? "active" : ""}><b>1</b> Richtung</span>
+          <i />
+          <span className={step >= 2 ? "active" : ""}><b>2</b> Messbar machen</span>
+          <i />
+          <span className={step >= 3 ? "active" : ""}><b>3</b> Einordnen</span>
         </div>
 
-        <div className="goal-form-guidance">
-          <ArrowUpRight size={15} />
-          <span>
-            {horizon === "5 Jahre"
-              ? "Dieses Ziel definiert eine strategische Richtung. Kürzere Ziele können später darauf verlinkt werden."
-              : parentCandidates.length
-                ? "Verknüpfe das Ziel mit einer längeren Richtung, wenn ein echter strategischer Zusammenhang besteht."
-                : "Noch keine längere Richtung vorhanden. Das Ziel kann zunächst eigenständig bleiben."}
-          </span>
-        </div>
+        {step === 1 ? (
+          <div className="goal-wizard-step">
+            <div className="goal-wizard-copy">
+              <span className="section-kicker">SCHRITT 1 VON 3</span>
+              <h3>Was willst du erreichen – und bis wann?</h3>
+            </div>
+            <label className="goal-wizard-wide"><span>Ziel</span><input autoFocus value={title} onChange={event => setTitle(event.target.value)} placeholder="z. B. KISS profitabel etablieren" /></label>
+            <div className="goal-horizon-choice">
+              {strategyOrder.map(item => (
+                <button type="button" key={item} className={horizon === item ? "active" : ""} onClick={() => changeHorizon(item)}>
+                  <strong>{item}</strong><span>{horizonCopy[item]}</span>
+                </button>
+              ))}
+            </div>
+            <label className="goal-wizard-date"><span>Zieldatum</span><input type="date" value={targetDate} onChange={event => setTargetDate(event.target.value)} /></label>
+          </div>
+        ) : null}
 
-        <div className="calendar-modal-actions">
-          <button type="button" onClick={onClose}>Abbrechen</button>
-          <button type="submit"><CheckCircle2 size={14} /> Speichern</button>
+        {step === 2 ? (
+          <div className="goal-wizard-step">
+            <div className="goal-wizard-copy">
+              <span className="section-kicker">SCHRITT 2 VON 3</span>
+              <h3>Wie sieht Erfolg konkret aus?</h3>
+              <p>Das Ergebnis sollte so eindeutig sein, dass du später nicht diskutieren musst, ob das Ziel erreicht wurde.</p>
+            </div>
+            <label className="goal-wizard-wide"><span>Messbares Ergebnis</span><input autoFocus value={result} onChange={event => setResult(event.target.value)} placeholder="z. B. 10 zahlende Kunden und positiver Monats-Cashflow" /></label>
+            <label className="goal-wizard-wide"><span>Nächster konkreter Schritt</span><input value={nextStep} onChange={event => setNextStep(event.target.value)} placeholder="Was kannst du als Nächstes wirklich tun?" /></label>
+          </div>
+        ) : null}
+
+        {step === 3 ? (
+          <div className="goal-wizard-step">
+            <div className="goal-wizard-copy">
+              <span className="section-kicker">SCHRITT 3 VON 3</span>
+              <h3>Wo gehört das Ziel hin?</h3>
+              <p>Nur wenn ein echter Zusammenhang besteht, wird das Ziel mit einer längeren Richtung verknüpft.</p>
+            </div>
+            <div className="goal-form-grid">
+              <label>
+                <span>Lebensbereich</span>
+                <select value={area} onChange={event => setArea(event.target.value as GoalArea)}>
+                  {areaOptions.map(item => <option key={item}>{item}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Strategische Verbindung</span>
+                <select value={parentGoalId} onChange={event => setParentGoalId(event.target.value)} disabled={horizon === "5 Jahre"}>
+                  <option value="">{horizon === "5 Jahre" ? "Strategische Richtung" : "Eigenständiges Ziel"}</option>
+                  {parentCandidates.map(goal => <option value={goal.id} key={goal.id}>{goal.horizon} · {goal.title}</option>)}
+                </select>
+              </label>
+              {initial ? (
+                <>
+                  <label><span>Fortschritt %</span><input type="number" min="0" max="100" value={progress} onChange={event => setProgress(event.target.value)} /></label>
+                  <label>
+                    <span>Status</span>
+                    <select value={status} onChange={event => setStatus(event.target.value as GoalStatus)}>
+                      <option value="aktiv">Aktiv</option>
+                      <option value="wartet">Wartet</option>
+                      <option value="erreicht">Erreicht</option>
+                    </select>
+                  </label>
+                </>
+              ) : null}
+            </div>
+            <div className="goal-form-guidance">
+              <ArrowUpRight size={15} />
+              <span>
+                {horizon === "5 Jahre"
+                  ? "Dieses Ziel ist selbst eine strategische Richtung."
+                  : parentCandidates.length
+                    ? "Du kannst es jetzt einer längeren Richtung zuordnen – oder bewusst eigenständig lassen."
+                    : "Noch keine längere Richtung vorhanden. Das Ziel bleibt zunächst eigenständig."}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="goal-wizard-actions">
+          <button type="button" onClick={step === 1 ? onClose : () => setStep(step - 1)}>{step === 1 ? "Abbrechen" : "Zurück"}</button>
+          {step < 3 ? (
+            <button
+              type="button"
+              className="primary"
+              onClick={() => setStep(step + 1)}
+              disabled={(step === 1 && (!title.trim() || !targetDate)) || (step === 2 && (!result.trim() || !nextStep.trim()))}
+            >
+              Weiter <ChevronRight size={14} />
+            </button>
+          ) : (
+            <button type="submit" className="primary"><CheckCircle2 size={14} /> Ziel speichern</button>
+          )}
         </div>
       </form>
     </div>

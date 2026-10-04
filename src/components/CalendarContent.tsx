@@ -17,7 +17,8 @@ import {
   PlanningItem,
   PLANNING_EVENT,
   PLANNING_STORAGE_KEY,
-  readPlanningItems
+  readPlanningItems,
+  writePlanningItems
 } from "@/lib/planning";
 
 type CalendarView = "month" | "week";
@@ -116,6 +117,25 @@ function planningToCalendarEvents(item: PlanningItem): CalendarEvent[] {
   }));
 }
 
+function readPrivateImportFromHash(): PlanningItem[] {
+  const prefix = "#jan-import=";
+  if (!window.location.hash.startsWith(prefix)) return [];
+
+  try {
+    const encoded = window.location.hash.slice(prefix.length);
+    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = window.atob(padded);
+    const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+    const decoded = new TextDecoder().decode(bytes);
+    const parsed = JSON.parse(decoded);
+    const items: PlanningItem[] = Array.isArray(parsed) ? parsed : parsed.items;
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
 export function CalendarContent() {
   const [view, setView] = useState<CalendarView>("week");
   const [cursor, setCursor] = useState(() => new Date());
@@ -123,6 +143,7 @@ export function CalendarContent() {
   const [linkedItems, setLinkedItems] = useState<PlanningItem[]>([]);
   const [ready, setReady] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [importNotice, setImportNotice] = useState("");
 
   useEffect(() => {
     function refreshLinked() {
@@ -135,7 +156,21 @@ export function CalendarContent() {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) setEvents(parsed);
       }
-      refreshLinked();
+
+      const imported = readPrivateImportFromHash();
+      if (imported.length) {
+        const map = new Map(readPlanningItems().map(item => [item.id, item]));
+        imported.forEach(item => map.set(item.id, item));
+        const merged = Array.from(map.values());
+        writePlanningItems(merged);
+        setLinkedItems(merged);
+        setImportNotice(imported.length === 1 ? "Privater Zeitraum lokal eingetragen" : imported.length + " private Einträge lokal eingetragen");
+        setCursor(fromDateKey(imported[0].date));
+        setView("month");
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      } else {
+        refreshLinked();
+      }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     } finally {
@@ -234,6 +269,13 @@ export function CalendarContent() {
           </button>
         </div>
       </section>
+
+      {importNotice ? (
+        <div className="calendar-import-notice">
+          <CheckCircle2 size={16} />
+          <span>{importNotice}</span>
+        </div>
+      ) : null}
 
       <section className="calendar-toolbar">
         <div className="calendar-nav">

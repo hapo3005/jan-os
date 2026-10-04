@@ -3,8 +3,11 @@
 import {
   CalendarCheck2,
   CalendarClock,
+  ChevronRight,
   Clock3,
   Focus,
+  FolderKanban,
+  Layers3,
   Plus,
   ShieldCheck,
   Trash2,
@@ -21,8 +24,26 @@ import {
   writePlanningItems
 } from "@/lib/planning";
 
+type ProjectBucket = "Jetzt" | "Als Nächstes" | "Später";
+
+type ProjectGroup = {
+  name: string;
+  items: PlanningItem[];
+  next: PlanningItem;
+  deadlineCount: number;
+  focusCount: number;
+  bucket: ProjectBucket;
+};
+
 function makeId() {
   return "plan-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+}
+
+function dateKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function formatDate(value: string) {
@@ -32,6 +53,22 @@ function formatDate(value: string) {
     day: "2-digit",
     month: "2-digit"
   });
+}
+
+function daysUntil(value: string) {
+  const [y, m, d] = value.split("-").map(Number);
+  const target = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
+}
+
+function bucketFor(item: PlanningItem): ProjectBucket {
+  const days = daysUntil(item.date);
+  if (days <= 7) return "Jetzt";
+  if (days <= 30) return "Als Nächstes";
+  return "Später";
 }
 
 export function ProjectsContent() {
@@ -56,12 +93,42 @@ export function ProjectsContent() {
     };
   }, []);
 
-  const upcoming = useMemo(
-    () => [...items].sort((a, b) =>
-      (a.date + "T" + a.start).localeCompare(b.date + "T" + b.start)
-    ),
-    [items]
-  );
+  const groups = useMemo<ProjectGroup[]>(() => {
+    const byProject = new Map<string, PlanningItem[]>();
+
+    items.forEach(item => {
+      const name = item.sourceLabel.trim() || "Ohne Projekt";
+      const list = byProject.get(name) ?? [];
+      list.push(item);
+      byProject.set(name, list);
+    });
+
+    return Array.from(byProject.entries())
+      .map(([name, projectItems]) => {
+        const sorted = [...projectItems].sort((a, b) =>
+          (a.date + "T" + a.start).localeCompare(b.date + "T" + b.start)
+        );
+        const next = sorted.find(item => item.date >= dateKey(new Date())) ?? sorted[sorted.length - 1];
+
+        return {
+          name,
+          items: sorted,
+          next,
+          deadlineCount: sorted.filter(item => item.kind === "Deadline").length,
+          focusCount: sorted.filter(item => item.kind === "Fokus").length,
+          bucket: bucketFor(next)
+        };
+      })
+      .sort((a, b) =>
+        (a.next.date + "T" + a.next.start).localeCompare(b.next.date + "T" + b.next.start)
+      );
+  }, [items]);
+
+  const grouped = useMemo(() => ({
+    "Jetzt": groups.filter(group => group.bucket === "Jetzt"),
+    "Als Nächstes": groups.filter(group => group.bucket === "Als Nächstes"),
+    "Später": groups.filter(group => group.bucket === "Später")
+  }), [groups]);
 
   function addItem(item: PlanningItem) {
     writePlanningItems([...readPlanningItems(), item]);
@@ -81,11 +148,11 @@ export function ProjectsContent() {
     <>
       <section className="project-planner-hero">
         <div>
-          <p className="eyebrow">PROJEKTZENTRALE · ZEITPLANUNG</p>
+          <p className="eyebrow">PROJEKTZENTRALE · PORTFOLIO</p>
           <h1>Projekte</h1>
           <p>
-            Projekttermine, Deadlines und Fokusblöcke werden einmal hier geplant
-            und erscheinen automatisch im JAN-OS-Kalender.
+            Projekte werden zuerst als Vorhaben geordnet. Termine, Deadlines und Fokusblöcke
+            hängen darunter und erscheinen automatisch im JAN-OS-Kalender.
           </p>
         </div>
         <div className="project-planner-actions">
@@ -97,47 +164,99 @@ export function ProjectsContent() {
       </section>
 
       <section className="project-planner-stats">
-        <div><strong>{items.length}</strong><span>Kalender-Verknüpfungen</span></div>
+        <div><strong>{groups.length}</strong><span>Projekte</span></div>
         <div><strong>{deadlineCount}</strong><span>Deadlines</span></div>
         <div><strong>{focusCount}</strong><span>Fokusblöcke</span></div>
       </section>
 
-      <section className="project-planner-board">
+      <section className="project-portfolio">
         <div className="project-planner-head">
           <div>
-            <span className="section-kicker">AUTOMATISCH IM KALENDER</span>
-            <h2>Projektplanung</h2>
+            <span className="section-kicker">AUTOMATISCH GEORDNET</span>
+            <h2>Projektübersicht</h2>
           </div>
-          <span><CalendarCheck2 size={15} /> synchron innerhalb von JAN OS</span>
+          <span><Layers3 size={15} /> nach nächstem relevanten Termin</span>
         </div>
 
-        {upcoming.length ? (
-          <div className="project-planner-list">
-            {upcoming.map(item => {
-              const Icon = item.kind === "Deadline" ? CalendarClock : item.kind === "Fokus" ? Focus : Clock3;
+        {groups.length ? (
+          <div className="project-buckets">
+            {(["Jetzt", "Als Nächstes", "Später"] as ProjectBucket[]).map(bucket => {
+              const bucketGroups = grouped[bucket];
+              if (!bucketGroups.length) return null;
+
               return (
-                <article className="project-planner-row" key={item.id}>
-                  <span className={"project-plan-icon " + item.kind.toLowerCase()}><Icon size={17} /></span>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <span>{item.sourceLabel} · {item.kind}</span>
+                <section className="project-bucket" key={bucket}>
+                  <div className="project-bucket-head">
+                    <div>
+                      <span>{bucket}</span>
+                      <strong>{bucketGroups.length}</strong>
+                    </div>
+                    <small>
+                      {bucket === "Jetzt"
+                        ? "in den nächsten 7 Tagen"
+                        : bucket === "Als Nächstes"
+                          ? "innerhalb der nächsten 30 Tage"
+                          : "später geplant"}
+                    </small>
                   </div>
-                  <div>
-                    <strong>{formatDate(item.date)}</strong>
-                    <span>{item.start || "ganztägig"}{item.end ? "–" + item.end : ""}</span>
+
+                  <div className="project-group-list">
+                    {bucketGroups.map(group => (
+                      <article className="project-group-card" key={group.name}>
+                        <div className="project-group-top">
+                          <span className="project-group-icon"><FolderKanban size={18} /></span>
+                          <div>
+                            <strong>{group.name}</strong>
+                            <span>{group.items.length} Planung{group.items.length === 1 ? "" : "en"} verknüpft</span>
+                          </div>
+                          <ChevronRight size={17} />
+                        </div>
+
+                        <div className="project-group-next">
+                          <span>NÄCHSTER PUNKT</span>
+                          <strong>{group.next.title}</strong>
+                          <small>{formatDate(group.next.date)}{group.next.start ? " · " + group.next.start : ""}</small>
+                        </div>
+
+                        <div className="project-group-meta">
+                          <span>{group.deadlineCount} Deadline{group.deadlineCount === 1 ? "" : "s"}</span>
+                          <span>{group.focusCount} Fokus</span>
+                          <span>{group.items.length} Kalender-Link{group.items.length === 1 ? "" : "s"}</span>
+                        </div>
+
+                        <div className="project-group-items">
+                          {group.items.map(item => {
+                            const Icon = item.kind === "Deadline" ? CalendarClock : item.kind === "Fokus" ? Focus : Clock3;
+                            return (
+                              <div className="project-group-item" key={item.id}>
+                                <span className={"project-plan-icon " + item.kind.toLowerCase()}><Icon size={15} /></span>
+                                <div>
+                                  <strong>{item.title}</strong>
+                                  <span>{item.kind}</span>
+                                </div>
+                                <div>
+                                  <strong>{formatDate(item.date)}</strong>
+                                  <span>{item.start || "ganztägig"}{item.end ? "–" + item.end : ""}</span>
+                                </div>
+                                <button type="button" onClick={() => removeItem(item.id)} aria-label={item.title + " löschen"}>
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                  <button type="button" onClick={() => removeItem(item.id)} aria-label={item.title + " löschen"}>
-                    <Trash2 size={14} />
-                  </button>
-                </article>
+                </section>
               );
             })}
           </div>
         ) : (
           <div className="project-planner-empty">
-            <CalendarCheck2 size={22} />
-            <strong>Noch keine Projekttermine verknüpft</strong>
-            <span>Die erste Planung erscheint danach automatisch im Kalender.</span>
+            <FolderKanban size={22} />
+            <strong>Noch keine Projekte mit Planung</strong>
+            <span>Sobald du eine Projektplanung anlegst, wird sie automatisch als Projekt gruppiert.</span>
           </div>
         )}
       </section>
@@ -145,10 +264,10 @@ export function ProjectsContent() {
       <section className="project-planner-rule">
         <Focus size={18} />
         <div>
-          <strong>Eine Quelle, zwei Ansichten.</strong>
+          <strong>Projekt zuerst, Termin danach.</strong>
           <span>
-            Projekt bleibt für Inhalt und Fortschritt zuständig. Der Kalender zeigt nur,
-            wann etwas stattfinden oder fertig sein soll.
+            JAN OS gruppiert alle Einträge automatisch nach Projekt. Innerhalb eines Projekts
+            bleiben Termine, Deadlines und Fokusblöcke chronologisch geordnet.
           </span>
         </div>
       </section>

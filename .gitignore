@@ -28,3 +28,9 @@ pnpm-debug.log*
 
 # typescript
 *.tsbuildinfo
+
+
+# private JAN OS data
+*.private.json
+/private-data/
+/src/data/private/

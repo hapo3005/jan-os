@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock3,
   RotateCcw,
+  Search,
   ShieldCheck,
   Upload,
   UsersRound
@@ -94,6 +95,7 @@ export function SocialCircle() {
   const [contacts, setContacts] = useState<SocialContact[]>([]);
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState("");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     try {
@@ -154,7 +156,7 @@ export function SocialCircle() {
     () =>
       contacts
         .map(contact => ({ contact, state: getContactState(contact) }))
-        .sort((a, b) => statusOrder[a.state.key] - statusOrder[b.state.key]),
+        .sort((a, b) => statusOrder[a.state.key] - statusOrder[b.state.key] || a.contact.name.localeCompare(b.contact.name)),
     [contacts]
   );
 
@@ -165,16 +167,45 @@ export function SocialCircle() {
     return { due, soon, start };
   }, [enriched]);
 
+  const focus = useMemo(
+    () => enriched.filter(item => ["due", "soon", "start"].includes(item.state.key)).slice(0, 5),
+    [enriched]
+  );
+
+  const filtered = useMemo(() => {
+    const value = query.trim().toLowerCase();
+    if (!value) return enriched;
+    return enriched.filter(({ contact }) =>
+      [contact.name, contact.circle, contact.relationJan, contact.relationNadine, contact.closeness, contact.frequency]
+        .some(field => field?.toLowerCase().includes(value))
+    );
+  }, [enriched, query]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, typeof filtered>();
+    filtered.forEach(item => {
+      const key = item.contact.circle || "Sonstige";
+      const list = map.get(key) ?? [];
+      list.push(item);
+      map.set(key, list);
+    });
+    return Array.from(map.entries());
+  }, [filtered]);
+
   return (
-    <section className="social-hub">
-      <div className="life-section-title">
+    <section className="social-hub social-hub-primary" id="menschen">
+      <div className="social-directory-head">
         <div>
-          <span className="section-kicker">FAMILIE · FREUNDE · SOZIALES UMFELD</span>
-          <h2>Wer wäre demnächst wieder dran?</h2>
+          <span className="section-kicker">MENSCHEN & KONTAKTE</span>
+          <h2>Familie, Freunde & Kontaktpflege</h2>
+          <p>Direkt in „Leben“ – kein eigener Hauptbereich. Wichtig ist nur: Wer ist relevant und wer wäre demnächst wieder dran?</p>
         </div>
-        <p>
-          Einfacher Kontaktrhythmus statt sozialem Punktesystem. Die privaten Namen bleiben auf deinem Gerät.
-        </p>
+        {contacts.length ? (
+          <label className="social-search">
+            <Search size={15} />
+            <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Kontakt suchen" />
+          </label>
+        ) : null}
       </div>
 
       {!ready ? null : contacts.length === 0 ? (
@@ -183,78 +214,97 @@ export function SocialCircle() {
           <div>
             <span className="section-kicker">PRIVATE DATEN</span>
             <h3>Deine 16 Kontakte sind vorbereitet</h3>
-            <p>
-              Lade die von mir erzeugte JAN-OS-Importdatei einmal ein. Danach liegen Namen,
-              Beziehungen und Kontaktfrequenzen nur lokal in diesem Browser.
-            </p>
+            <p>Lade die JAN-OS-Datei einmal ein. Danach liegen Namen, Beziehungen und Kontaktfrequenzen nur lokal in diesem Browser.</p>
           </div>
           <label className="social-import-button">
-            <Upload size={15} />
-            Kontakte laden
+            <Upload size={15} /> Kontakte laden
             <input type="file" accept=".json,application/json" onChange={handleImport} />
           </label>
         </div>
       ) : (
         <>
           <div className="social-kpis">
-            <div>
-              <strong>{contacts.length}</strong>
-              <span>Kontakte</span>
-            </div>
-            <div className={stats.due ? "attention" : ""}>
-              <strong>{stats.due}</strong>
-              <span>jetzt melden</span>
-            </div>
-            <div>
-              <strong>{stats.soon}</strong>
-              <span>bald dran</span>
-            </div>
-            <div>
-              <strong>{stats.start}</strong>
-              <span>noch ohne Startdatum</span>
-            </div>
+            <div><strong>{contacts.length}</strong><span>Kontakte</span></div>
+            <div className={stats.due ? "attention" : ""}><strong>{stats.due}</strong><span>jetzt melden</span></div>
+            <div><strong>{stats.soon}</strong><span>bald dran</span></div>
+            <div><strong>{stats.start}</strong><span>Start offen</span></div>
           </div>
 
-          <div className="social-contact-list">
-            {enriched.slice(0, 8).map(({ contact, state }) => (
-              <article className="social-contact-row" key={contact.name}>
-                <div className="social-avatar">{contact.name.slice(0, 1).toUpperCase()}</div>
-                <div className="social-contact-copy">
-                  <strong>{contact.name}</strong>
-                  <span>
-                    {contact.circle}
-                    {contact.relationJan ? ` · ${contact.relationJan}` : ""}
-                  </span>
-                </div>
-                <div className="social-frequency">
-                  <small>Rhythmus</small>
-                  <span>{contact.frequency}</span>
-                </div>
-                <div className={`social-state ${state.key}`}>
-                  <strong>{state.label}</strong>
-                  <span>{state.detail}</span>
-                </div>
-                {state.key !== "occasion" && state.key !== "open" ? (
-                  <button type="button" onClick={() => markToday(contact.name)}>
-                    <CheckCircle2 size={14} />
-                    Heute Kontakt
-                  </button>
-                ) : (
-                  <span className="social-passive"><Clock3 size={14} /></span>
-                )}
-              </article>
-            ))}
+          {focus.length ? (
+            <div className="social-focus-block">
+              <div className="social-subhead">
+                <div><span className="section-kicker">KONTAKTFOKUS</span><h3>Wer gerade Aufmerksamkeit braucht</h3></div>
+              </div>
+              <div className="social-focus-list">
+                {focus.map(({ contact, state }) => (
+                  <article className="social-focus-card" key={contact.name}>
+                    <div className="social-avatar">{contact.name.slice(0, 1).toUpperCase()}</div>
+                    <div>
+                      <strong>{contact.name}</strong>
+                      <span>{contact.relationJan || contact.circle}</span>
+                    </div>
+                    <div className={`social-state ${state.key}`}>
+                      <strong>{state.label}</strong>
+                      <span>{state.detail}</span>
+                    </div>
+                    <button type="button" onClick={() => markToday(contact.name)}>
+                      <CheckCircle2 size={14} /> Heute Kontakt
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="social-directory">
+            <div className="social-subhead">
+              <div><span className="section-kicker">VERZEICHNIS</span><h3>Alle Kontakte</h3></div>
+              <span>{filtered.length} von {contacts.length}</span>
+            </div>
+
+            <div className="social-groups">
+              {groups.map(([circle, entries]) => (
+                <section className="social-group" key={circle}>
+                  <div className="social-group-head"><strong>{circle}</strong><span>{entries.length}</span></div>
+                  <div className="social-contact-list">
+                    {entries.map(({ contact, state }) => (
+                      <article className="social-contact-row" key={contact.name}>
+                        <div className="social-avatar">{contact.name.slice(0, 1).toUpperCase()}</div>
+                        <div className="social-contact-copy">
+                          <strong>{contact.name}</strong>
+                          <span>
+                            {contact.relationJan || "Beziehung offen"}
+                            {contact.relationNadine ? ` · Nadine: ${contact.relationNadine}` : ""}
+                          </span>
+                        </div>
+                        <div className="social-frequency">
+                          <small>Rhythmus</small>
+                          <span>{contact.frequency}</span>
+                        </div>
+                        <div className={`social-state ${state.key}`}>
+                          <strong>{state.label}</strong>
+                          <span>{state.detail}</span>
+                        </div>
+                        {state.key !== "occasion" && state.key !== "open" ? (
+                          <button type="button" onClick={() => markToday(contact.name)}>
+                            <CheckCircle2 size={14} /> Heute Kontakt
+                          </button>
+                        ) : (
+                          <span className="social-passive"><Clock3 size={14} /></span>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
 
           <div className="social-local-footer">
             <span><ShieldCheck size={14} /> Lokal gespeichert · nicht im öffentlichen Repo</span>
             <div>
               {message ? <small>{message}</small> : null}
-              <label>
-                <Upload size={13} />
-                Neu importieren
-                <input type="file" accept=".json,application/json" onChange={handleImport} />
-              </label>
+              <label><Upload size={13} /> Neu importieren<input type="file" accept=".json,application/json" onChange={handleImport} /></label>
               <button type="button" onClick={reset}><RotateCcw size={13} /> Zurücksetzen</button>
             </div>
           </div>

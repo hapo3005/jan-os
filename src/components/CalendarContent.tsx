@@ -82,17 +82,38 @@ function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function planningToCalendar(item: PlanningItem): CalendarEvent {
-  return {
-    id: "linked-" + item.id,
+function datesBetween(start: string, end?: string) {
+  const startDate = fromDateKey(start);
+  const endDate = end ? fromDateKey(end) : startDate;
+  const days: string[] = [];
+
+  for (let date = new Date(startDate); date <= endDate; date = addDays(date, 1)) {
+    days.push(dateKey(date));
+  }
+
+  return days;
+}
+
+function linkedCategory(item: PlanningItem): CalendarEvent["category"] {
+  if (item.source === "Gesundheit") return "Gesundheit";
+  if (item.source === "KISS") return "KISS";
+  if (item.kind === "Deadline") return "Deadline";
+  if (item.kind === "Fokus") return "Fokus";
+  if (item.source === "Leben") return "Privat";
+  return "Projekt";
+}
+
+function planningToCalendarEvents(item: PlanningItem): CalendarEvent[] {
+  return datesBetween(item.date, item.endDate).map(day => ({
+    id: "linked-" + item.id + "-" + day,
     title: item.title,
-    date: item.date,
+    date: day,
     start: item.start,
     end: item.end,
-    category: item.kind === "Termin" ? "Projekt" : item.kind,
+    category: linkedCategory(item),
     origin: "linked",
-    sourceLabel: item.sourceLabel
-  };
+    sourceLabel: item.location ? item.sourceLabel + " · " + item.location : item.sourceLabel
+  }));
 }
 
 export function CalendarContent() {
@@ -156,7 +177,10 @@ export function CalendarContent() {
     setCursor(next);
   }
 
-  const linkedEvents = useMemo(() => linkedItems.map(planningToCalendar), [linkedItems]);
+  const linkedEvents = useMemo(
+    () => linkedItems.flatMap(planningToCalendarEvents),
+    [linkedItems]
+  );
   const allEvents = useMemo(
     () => [...events.map(item => ({ ...item, origin: item.origin ?? "manual" as const })), ...linkedEvents]
       .sort((a, b) => (a.date + "T" + a.start).localeCompare(b.date + "T" + b.start)),
@@ -356,7 +380,7 @@ export function CalendarContent() {
           <span className="section-kicker">JAN OS ZEIT-ENGINE</span>
           <h2>Einmal planen, automatisch überall sichtbar.</h2>
           <p>
-            Projekttermine, Deadlines und Fokusblöcke werden bereits automatisch übernommen.
+            Projekttermine, Deadlines, Fokusblöcke und mehrtägige Zeiträume werden automatisch übernommen.
             Google Calendar wird später nur noch die externe Synchronisationsschicht darüber.
           </p>
         </div>

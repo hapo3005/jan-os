@@ -3032,3 +3032,22 @@ footer {
   .event-briefing-summary { grid-template-columns: 1fr; }
   .event-briefing.compact .event-briefing-badge { display: none; }
 }
+
+
+/* Kalender · unverbindliche Terminoptionen */
+.calendar-event.option {
+  border-style: dashed;
+  border-left-style: solid;
+  background: #fffaf0;
+}
+.calendar-event.option strong {
+  color: #76551f;
+}
+.calendar-event.option span,
+.calendar-event.option small {
+  color: #8b744d;
+}
+.calendar-month-event.option {
+  color: #9a6c23;
+  border-left-style: dashed;
+}

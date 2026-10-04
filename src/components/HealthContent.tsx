@@ -3,10 +3,16 @@
 import {
   CalendarRange,
   CheckCircle2,
+  ChevronRight,
+  Clock3,
+  ExternalLink,
+  FileText,
   MapPin,
+  Package,
   Pencil,
   Plus,
   ShieldCheck,
+  Train,
   Trash2,
   Upload,
   X
@@ -33,14 +39,21 @@ function formatDate(value: string) {
   });
 }
 
+function checklistProgress(items: { status: string }[] = []) {
+  const done = items.filter(item => item.status === "done").length;
+  return { done, total: items.length };
+}
+
 export function HealthContent() {
   const [items, setItems] = useState<PlanningItem[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<PlanningItem | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   function refresh() {
-    setItems(readPlanningItems().filter(item => item.source === "Gesundheit"));
+    const next = readPlanningItems().filter(item => item.source === "Gesundheit");
+    setItems(next);
   }
 
   useEffect(() => {
@@ -61,6 +74,12 @@ export function HealthContent() {
     [items]
   );
 
+  const smartItem = useMemo(
+    () => periods.find(item => item.id === selectedId && item.intelligence)
+      ?? periods.find(item => item.intelligence),
+    [periods, selectedId]
+  );
+
   function saveItem(item: PlanningItem) {
     const all = readPlanningItems();
     const next = [...all.filter(existing => existing.id !== item.id), item];
@@ -68,6 +87,41 @@ export function HealthContent() {
     refresh();
     setShowForm(false);
     setEditingItem(null);
+  }
+
+  function updateSmartItem(updated: PlanningItem) {
+    const all = readPlanningItems();
+    writePlanningItems(all.map(item => item.id === updated.id ? updated : item));
+    refresh();
+  }
+
+  function toggleChecklist(item: PlanningItem, group: "documents" | "packing", id: string) {
+    if (!item.intelligence) return;
+    const list = item.intelligence[group] ?? [];
+    const nextList = list.map(entry =>
+      entry.id === id
+        ? { ...entry, status: entry.status === "done" ? "open" as const : "done" as const }
+        : entry
+    );
+
+    updateSmartItem({
+      ...item,
+      intelligence: { ...item.intelligence, [group]: nextList }
+    });
+  }
+
+  function toggleTimeline(item: PlanningItem, id: string) {
+    if (!item.intelligence) return;
+    const nextTimeline = (item.intelligence.timeline ?? []).map(entry =>
+      entry.id === id
+        ? { ...entry, status: entry.status === "done" ? "open" as const : "done" as const }
+        : entry
+    );
+
+    updateSmartItem({
+      ...item,
+      intelligence: { ...item.intelligence, timeline: nextTimeline }
+    });
   }
 
   function editItem(item: PlanningItem) {
@@ -98,6 +152,7 @@ export function HealthContent() {
       safeIncoming.forEach(item => map.set(item.id, item));
       writePlanningItems(Array.from(map.values()));
       refresh();
+      setSelectedId(safeIncoming[0]?.id ?? null);
       setMessage(safeIncoming.length + " private Gesundheitsplanung geladen");
     } catch {
       setMessage("Die private Planungsdatei konnte nicht gelesen werden.");
@@ -106,6 +161,13 @@ export function HealthContent() {
     }
   }
 
+  const docProgress = checklistProgress(smartItem?.intelligence?.documents);
+  const packProgress = checklistProgress(smartItem?.intelligence?.packing);
+  const timelineProgress = checklistProgress(smartItem?.intelligence?.timeline);
+  const nextTimeline = smartItem?.intelligence?.timeline
+    ?.filter(item => item.status !== "done")
+    .sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"))[0];
+
   return (
     <>
       <section className="health-hero">
@@ -113,7 +175,7 @@ export function HealthContent() {
           <p className="eyebrow">GESUNDHEIT · ZEITRÄUME · TERMINE</p>
           <h1>Gesundheit & Fitness</h1>
           <p>
-            Gesundheitsbezogene Zeiträume werden hier gepflegt und automatisch im Kalender sichtbar.
+            Gesundheitsbezogene Zeiträume werden hier gepflegt, vorbereitet und automatisch im Kalender sichtbar.
             Private Inhalte bleiben lokal auf deinem Gerät.
           </p>
         </div>
@@ -155,6 +217,11 @@ export function HealthContent() {
                   {item.location ? <span><MapPin size={12} /> {item.location}</span> : null}
                 </div>
                 <div className="health-period-actions">
+                  {item.intelligence ? (
+                    <button type="button" onClick={() => setSelectedId(item.id)}>
+                      Vorbereitung <ChevronRight size={13} />
+                    </button>
+                  ) : null}
                   <button type="button" onClick={() => editItem(item)}>
                     <Pencil size={13} /> Bearbeiten
                   </button>
@@ -176,6 +243,197 @@ export function HealthContent() {
 
         {message ? <p className="health-import-message">{message}</p> : null}
       </section>
+
+      {smartItem?.intelligence ? (
+        <section className="health-smart">
+          <div className="health-smart-head">
+            <div>
+              <span className="section-kicker">INTELLIGENTE VORBEREITUNG</span>
+              <h2>{smartItem.title}: alles im Blick</h2>
+              <p>
+                JAN OS verbindet Unterlagen, Anreise, Packliste und Klinik-Informationen zu einem einzigen Vorgang.
+              </p>
+            </div>
+            <div className="health-smart-next">
+              <Clock3 size={17} />
+              <div>
+                <span>NÄCHSTER SINNVOLLER SCHRITT</span>
+                <strong>{nextTimeline?.label ?? "Vorbereitung vollständig"}</strong>
+                {nextTimeline?.dueDate ? <small>bis {formatDate(nextTimeline.dueDate)}</small> : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="health-smart-kpis">
+            <div><strong>{docProgress.done}/{docProgress.total}</strong><span>Unterlagen</span></div>
+            <div><strong>{packProgress.done}/{packProgress.total}</strong><span>Packliste</span></div>
+            <div><strong>{timelineProgress.done}/{timelineProgress.total}</strong><span>Vorbereitung</span></div>
+            <div className={smartItem.intelligence.travel?.status === "ready" ? "ready" : "check"}>
+              <strong>{smartItem.intelligence.travel?.status === "ready" ? "✓" : "!"}</strong>
+              <span>Anreise</span>
+            </div>
+          </div>
+
+          <div className="health-smart-grid">
+            <article className="health-smart-card">
+              <div className="health-smart-card-head">
+                <span><FileText size={18} /></span>
+                <div>
+                  <span className="section-kicker">UNTERLAGEN</span>
+                  <h3>Was muss mit?</h3>
+                </div>
+              </div>
+              <div className="health-check-list">
+                {(smartItem.intelligence.documents ?? []).map(entry => (
+                  <button type="button" key={entry.id} onClick={() => toggleChecklist(smartItem, "documents", entry.id)}>
+                    <span className={entry.status === "done" ? "health-check done" : "health-check"}>
+                      {entry.status === "done" ? <CheckCircle2 size={15} /> : null}
+                    </span>
+                    <span>
+                      <strong>{entry.label}</strong>
+                      {entry.detail ? <small>{entry.detail}</small> : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </article>
+
+            <article className="health-smart-card">
+              <div className="health-smart-card-head">
+                <span><Package size={18} /></span>
+                <div>
+                  <span className="section-kicker">PACKLISTE</span>
+                  <h3>Was gehört in den Koffer?</h3>
+                </div>
+              </div>
+              <div className="health-check-list">
+                {(smartItem.intelligence.packing ?? []).map(entry => (
+                  <button type="button" key={entry.id} onClick={() => toggleChecklist(smartItem, "packing", entry.id)}>
+                    <span className={entry.status === "done" ? "health-check done" : "health-check"}>
+                      {entry.status === "done" ? <CheckCircle2 size={15} /> : null}
+                    </span>
+                    <span>
+                      <strong>{entry.label}</strong>
+                      {entry.detail ? <small>{entry.detail}</small> : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </article>
+
+            <article className="health-smart-card travel">
+              <div className="health-smart-card-head">
+                <span><Train size={18} /></span>
+                <div>
+                  <span className="section-kicker">ANREISE</span>
+                  <h3>Ohne Stress zur Klinik</h3>
+                </div>
+              </div>
+              {smartItem.intelligence.travel ? (
+                <div className="health-travel">
+                  <div>
+                    <span>Start</span>
+                    <strong>{smartItem.intelligence.travel.origin}</strong>
+                  </div>
+                  <div>
+                    <span>Ziel</span>
+                    <strong>{smartItem.intelligence.travel.destination}</strong>
+                  </div>
+                  {smartItem.intelligence.travel.clinicArrivalWindow ? (
+                    <div>
+                      <span>Aufnahme</span>
+                      <strong>{smartItem.intelligence.travel.clinicArrivalWindow}</strong>
+                    </div>
+                  ) : null}
+                  {smartItem.intelligence.travel.targetArrival ? (
+                    <div>
+                      <span>Zielankunft Bahnhof</span>
+                      <strong>{smartItem.intelligence.travel.targetArrival}</strong>
+                    </div>
+                  ) : null}
+                  {smartItem.intelligence.travel.routeHint ? <p>{smartItem.intelligence.travel.routeHint}</p> : null}
+                  {smartItem.intelligence.travel.note ? <p className="health-travel-note">{smartItem.intelligence.travel.note}</p> : null}
+                  <div className="health-travel-actions">
+                    {smartItem.intelligence.travel.searchUrl ? (
+                      <a href={smartItem.intelligence.travel.searchUrl} target="_blank" rel="noreferrer">
+                        Bahn prüfen <ExternalLink size={13} />
+                      </a>
+                    ) : null}
+                    {smartItem.intelligence.travel.clinicTravelUrl ? (
+                      <a href={smartItem.intelligence.travel.clinicTravelUrl} target="_blank" rel="noreferrer">
+                        Klinik-Anreise <ExternalLink size={13} />
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </article>
+
+            <article className="health-smart-card">
+              <div className="health-smart-card-head">
+                <span><MapPin size={18} /></span>
+                <div>
+                  <span className="section-kicker">VOR ORT</span>
+                  <h3>Wichtige Klinik-Infos</h3>
+                </div>
+              </div>
+              <div className="health-facts">
+                {(smartItem.intelligence.facts ?? []).map(fact => (
+                  <div key={fact.label}>
+                    <span>{fact.label}</span>
+                    <strong>{fact.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+
+          <article className="health-timeline">
+            <div className="health-smart-card-head">
+              <span><Clock3 size={18} /></span>
+              <div>
+                <span className="section-kicker">VORBEREITUNGSPLAN</span>
+                <h3>Was wann erledigt werden sollte</h3>
+              </div>
+            </div>
+            <div className="health-timeline-list">
+              {(smartItem.intelligence.timeline ?? []).map(entry => (
+                <button type="button" key={entry.id} onClick={() => toggleTimeline(smartItem, entry.id)}>
+                  <span className={entry.status === "done" ? "health-check done" : "health-check"}>
+                    {entry.status === "done" ? <CheckCircle2 size={15} /> : null}
+                  </span>
+                  <span>
+                    <strong>{entry.label}</strong>
+                    {entry.detail ? <small>{entry.detail}</small> : null}
+                  </span>
+                  <time>{entry.dueDate ? formatDate(entry.dueDate) : "offen"}</time>
+                </button>
+              ))}
+            </div>
+          </article>
+
+          {smartItem.intelligence.sources?.length ? (
+            <div className="health-smart-sources">
+              <span>Recherche-Stand: {smartItem.intelligence.generatedAt ? formatDate(smartItem.intelligence.generatedAt) : "aktuell"}</span>
+              <div>
+                {smartItem.intelligence.sources.map(source => (
+                  <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>
+                    {source.label} <ExternalLink size={11} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : periods.length ? (
+        <section className="health-smart-placeholder">
+          <ShieldCheck size={20} />
+          <div>
+            <strong>Dieser Zeitraum hat noch keine intelligente Vorbereitung.</strong>
+            <span>JAN OS kann dafür Unterlagen, Packliste, Anreise und Klinik-Infos zusammenführen.</span>
+          </div>
+        </section>
+      ) : null}
 
       {showForm ? (
         <HealthPeriodForm
@@ -217,7 +475,8 @@ function HealthPeriodForm({
       kind: "Zeitraum",
       source: "Gesundheit",
       sourceLabel: sourceLabel.trim() || "Gesundheit",
-      location: location.trim() || undefined
+      location: location.trim() || undefined,
+      intelligence: initialItem?.intelligence
     });
   }
 

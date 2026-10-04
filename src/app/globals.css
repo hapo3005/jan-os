@@ -2316,3 +2316,18 @@ footer {
     flex-direction: column;
   }
 }
+
+
+.calendar-import-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 11px 14px;
+  border: 1px solid #cfe7da;
+  border-radius: 12px;
+  background: #f1f9f4;
+  color: #2f7d59;
+  font-size: 9px;
+  font-weight: 600;
+}

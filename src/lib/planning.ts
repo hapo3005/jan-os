@@ -71,6 +71,8 @@ export type PlanningItem = {
   source: PlanningSource;
   sourceLabel: string;
   location?: string;
+  status?: "fixed" | "option";
+  dateOptions?: string[];
   intelligence?: HealthIntelligence;
   eventBriefing?: EventBriefing;
 };

@@ -324,7 +324,7 @@ export function HealthContent() {
         </section>
       ) : null}
 
-      {smartItem?.intelligence ? (
+      {smartItem && intel ? (
         <section className="health-smart health-smart-v2">
           <div className="health-command">
             <div className="health-command-main">

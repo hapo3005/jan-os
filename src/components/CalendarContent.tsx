@@ -14,6 +14,7 @@ import {
   ExternalLink,
   MapPin,
   TicketCheck,
+  Trash2,
   X
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -156,6 +157,7 @@ export function CalendarContent() {
   const [showForm, setShowForm] = useState(false);
   const [importNotice, setImportNotice] = useState("");
   const [selectedBriefingId, setSelectedBriefingId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   useEffect(() => {
     function refreshLinked() {
@@ -243,6 +245,23 @@ export function CalendarContent() {
     [linkedItems, selectedBriefingId]
   );
 
+  const selectedEvent = useMemo(
+    () => allEvents.find(item => item.id === selectedEventId) ?? null,
+    [allEvents, selectedEventId]
+  );
+
+  const selectedPlanningItem = useMemo(
+    () => selectedEvent?.planningId
+      ? linkedItems.find(item => item.id === selectedEvent.planningId) ?? null
+      : null,
+    [linkedItems, selectedEvent]
+  );
+
+  function openEvent(item: CalendarEvent) {
+    setSelectedEventId(item.id);
+    if (item.planningId && item.hasBriefing) setSelectedBriefingId(item.planningId);
+  }
+
   const today = new Date();
   const weekStart = startOfWeek(cursor);
   const weekDays = useMemo(
@@ -329,7 +348,7 @@ export function CalendarContent() {
                           type="button"
                           className={`calendar-event ${item.category.toLowerCase()} ${item.tentative ? "option" : ""}`}
                           key={item.id}
-                          onClick={() => item.planningId && item.hasBriefing ? setSelectedBriefingId(item.planningId) : undefined}
+                          onClick={() => openEvent(item)}
                           onDoubleClick={() => item.origin !== "linked" && deleteEvent(item.id)}
                           title={item.hasBriefing ? "Klicken für intelligentes Briefing" : item.origin === "linked" ? "Automatisch aus JAN OS verknüpft" : "Doppelklick zum Löschen"}
                         >
@@ -366,9 +385,14 @@ export function CalendarContent() {
                       <strong>{day.getDate()}</strong>
                       <div>
                         {items.slice(0, 3).map(item => (
-                          <span className={`calendar-month-event ${item.category.toLowerCase()}`} key={item.id}>
+                          <button
+                            type="button"
+                            className={`calendar-month-event ${item.category.toLowerCase()} ${item.tentative ? "option" : ""}`}
+                            key={item.id}
+                            onClick={() => openEvent(item)}
+                          >
                             {item.tentative ? "Option · " : ""}{item.start ? `${item.start} · ` : ""}{item.title}{item.origin === "linked" ? " ↗" : ""}
-                          </span>
+                          </button>
                         ))}
                         {items.length > 3 ? <small>+{items.length - 3} weitere</small> : null}
                       </div>
@@ -399,7 +423,7 @@ export function CalendarContent() {
             {ready && upcoming.length ? (
               <div className="calendar-upcoming-list">
                 {upcoming.map(item => (
-                  <div className="calendar-upcoming-row" key={item.id}>
+                  <button type="button" className="calendar-upcoming-row" key={item.id} onClick={() => openEvent(item)}>
                     <span className={`calendar-category-dot ${item.category.toLowerCase()}`} />
                     <div>
                       <strong>{item.title}</strong>
@@ -409,7 +433,7 @@ export function CalendarContent() {
                       </span>
                     </div>
                     <small>{item.tentative ? "Option · " : ""}{item.sourceLabel || item.category}</small>
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -556,6 +580,18 @@ export function CalendarContent() {
         <span className="calendar-integration-status"><CheckCircle2 size={14} /> intern verknüpft</span>
       </section>
 
+      {selectedEvent ? (
+        <EventDetailModal
+          event={selectedEvent}
+          planningItem={selectedPlanningItem}
+          onClose={() => setSelectedEventId(null)}
+          onDelete={selectedEvent.origin === "manual" ? () => {
+            deleteEvent(selectedEvent.id);
+            setSelectedEventId(null);
+          } : undefined}
+        />
+      ) : null}
+
       {showForm ? (
         <EventForm
           initialDate={dateKey(cursor)}
@@ -637,6 +673,116 @@ function EventForm({
           <button type="submit"><Plus size={14} /> Eintragen</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+
+function EventDetailModal({
+  event,
+  planningItem,
+  onClose,
+  onDelete
+}: {
+  event: CalendarEvent;
+  planningItem: PlanningItem | null;
+  onClose: () => void;
+  onDelete?: () => void;
+}) {
+  const briefing = planningItem?.eventBriefing;
+  const sourceHref = planningItem?.source === "Gesundheit"
+    ? "../gesundheit/"
+    : planningItem?.source === "Projekt"
+      ? "../projekte/"
+      : null;
+
+  return (
+    <div className="calendar-modal-backdrop event-detail-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="event-detail-modal" onMouseDown={e => e.stopPropagation()} aria-modal="true" role="dialog">
+        <div className="event-detail-head">
+          <div>
+            <span className="section-kicker">{event.tentative ? "TERMINOPTION" : event.category.toUpperCase()}</span>
+            <h2>{event.title}</h2>
+            <p>
+              {fromDateKey(event.date).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+              {event.start ? ` · ${event.start}${event.end ? `–${event.end}` : ""} Uhr` : " · ganztägig"}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Schließen"><X size={18} /></button>
+        </div>
+
+        <div className="event-detail-meta">
+          {planningItem?.location ? <span><MapPin size={14} /> {planningItem.location}</span> : null}
+          {event.tentative ? <span><Clock3 size={14} /> noch nicht final bestätigt</span> : null}
+          {event.hasBriefing ? <span><Sparkles size={14} /> Smart-Briefing vorhanden</span> : null}
+        </div>
+
+        {briefing ? (
+          <>
+            <div className="event-detail-advice">
+              <Sparkles size={18} />
+              <div>
+                <span>MEIN RAT</span>
+                <strong>{briefing.recommendation}</strong>
+              </div>
+            </div>
+
+            <div className="event-detail-facts">
+              {(briefing.facts ?? []).slice(0, 6).map(fact => (
+                <div key={fact.label}>
+                  <span>{fact.label}</span>
+                  <strong>{fact.value}</strong>
+                </div>
+              ))}
+            </div>
+
+            {(briefing.checklist ?? []).length ? (
+              <div className="event-detail-section">
+                <h3>Vorher erledigen</h3>
+                <div className="event-detail-checks">
+                  {(briefing.checklist ?? []).map(item => (
+                    <div key={item.id}>
+                      <span className={item.status === "done" ? "done" : ""}>{item.status === "done" ? "✓" : ""}</span>
+                      <div><strong>{item.label}</strong>{item.detail ? <small>{item.detail}</small> : null}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {briefing.travel ? (
+              <div className="event-detail-section">
+                <h3>Anreise</h3>
+                <p>{briefing.travel.routeHint}</p>
+                <div className="event-detail-links">
+                  {briefing.travel.searchUrl ? <a href={briefing.travel.searchUrl} target="_blank" rel="noreferrer">Route prüfen <ExternalLink size={12} /></a> : null}
+                  {briefing.travel.clinicTravelUrl ? <a href={briefing.travel.clinicTravelUrl} target="_blank" rel="noreferrer">Veranstalter-Info <ExternalLink size={12} /></a> : null}
+                </div>
+              </div>
+            ) : null}
+
+            {(briefing.sources ?? []).length ? (
+              <div className="event-detail-sources">
+                {(briefing.sources ?? []).map(source => (
+                  <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label} <ExternalLink size={11} /></a>
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div className="event-detail-empty">
+            <CalendarDays size={20} />
+            <strong>Noch kein Smart-Briefing vorhanden.</strong>
+            <span>Der Termin ist gespeichert, enthält aber noch keine zusätzlichen recherchierten Informationen.</span>
+          </div>
+        )}
+
+        <div className="event-detail-actions">
+          {sourceHref ? <a href={sourceHref}>Zur Quelle</a> : null}
+          {onDelete ? <button type="button" className="danger" onClick={onDelete}><Trash2 size={14} /> Löschen</button> : null}
+          <button type="button" onClick={onClose}>Schließen</button>
+        </div>
+      </section>
     </div>
   );
 }

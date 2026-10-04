@@ -20,6 +20,7 @@ import {
 import { LiveClock } from "@/components/LiveClock";
 import { LifeContent } from "@/components/LifeContent";
 import { CalendarContent } from "@/components/CalendarContent";
+import { ProjectsContent } from "@/components/ProjectsContent";
 
 const nav = [
   { label: "Home", href: "/", icon: Home },
@@ -231,6 +232,8 @@ export default async function SectionPage({
           <LifeContent />
         ) : key === "kalender" ? (
           <CalendarContent />
+        ) : key === "projekte" ? (
+          <ProjectsContent />
         ) : (
           <>
             <section className="module-hero">

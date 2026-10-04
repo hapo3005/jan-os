@@ -4734,3 +4734,45 @@ footer {
   }
   .social-contact-form { grid-template-columns: 1fr; }
 }
+
+
+/* Kontakte · persönlicher Kontext */
+.social-contact-open small {
+  margin-top: 2px;
+  color: #8a9cad;
+  font-size: 7px;
+  line-height: 1.4;
+}
+.social-contact-form-divider {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  margin-top: 5px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.social-contact-form-divider strong {
+  color: #273e51;
+  font-size: 11px;
+}
+.social-contact-form label.wide {
+  grid-column: 1 / -1;
+}
+.social-contact-form textarea {
+  width: 100%;
+  min-height: 108px;
+  resize: vertical;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #1d3042;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.social-contact-form textarea:focus {
+  outline: 0;
+  border-color: #8dbce8;
+  box-shadow: 0 0 0 3px rgba(47,128,237,.08);
+}

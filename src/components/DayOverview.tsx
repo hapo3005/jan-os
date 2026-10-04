@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   Clock3,
@@ -106,6 +107,18 @@ function dateKey(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
+function fromDateKey(value: string) {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0);
+}
+
+function addDays(date: Date, amount: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  next.setHours(12, 0, 0, 0);
+  return next;
+}
+
 function occursOn(item: PlanningItem, key: string) {
   if (item.dateOptions?.length) return item.dateOptions.includes(key);
   if (item.endDate) return item.date <= key && key <= item.endDate;
@@ -120,13 +133,13 @@ function sourceHref(source: string) {
   return "/kalender";
 }
 
-function contactState(contact: SocialContact) {
+function contactState(contact: SocialContact, referenceDate: Date) {
   const cadence = cadenceDays[contact.frequency];
   if (!cadence || !contact.lastContact) return null;
   const last = new Date(contact.lastContact + "T12:00:00");
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  const days = Math.floor((today.getTime() - last.getTime()) / 86400000);
+  const ref = new Date(referenceDate);
+  ref.setHours(12, 0, 0, 0);
+  const days = Math.floor((ref.getTime() - last.getTime()) / 86400000);
   if (days >= cadence) return { key: "due", label: "Jetzt melden", days };
   if (days >= Math.floor(cadence * .75)) return { key: "soon", label: "Bald dran", days };
   return null;
@@ -167,19 +180,29 @@ function routineForDate(date: Date): RoutineBlock[] {
 }
 
 export function DayOverview() {
+  const initialDate = new Date();
+  initialDate.setHours(12, 0, 0, 0);
+
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const [planning, setPlanning] = useState<PlanningItem[]>([]);
   const [manualEvents, setManualEvents] = useState<ManualCalendarEvent[]>([]);
   const [contacts, setContacts] = useState<SocialContact[]>([]);
   const [finance, setFinance] = useState<FinanceData>({});
   const [ready, setReady] = useState(false);
 
-  const now = new Date();
-  const today = dateKey(now);
-  const tomorrowDate = new Date(now);
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrow = dateKey(tomorrowDate);
-  const todayRoutine = useMemo(() => routineForDate(now), [today]);
-  const tomorrowRoutine = useMemo(() => routineForDate(tomorrowDate), [tomorrow]);
+  const realNow = new Date();
+  const realTodayKey = dateKey(realNow);
+  const selectedKey = dateKey(selectedDate);
+  const isToday = selectedKey === realTodayKey;
+  const nextDate = addDays(selectedDate, 1);
+  const nextKey = dateKey(nextDate);
+  const selectedRoutine = useMemo(() => routineForDate(selectedDate), [selectedKey]);
+  const nextRoutine = useMemo(() => routineForDate(nextDate), [nextKey]);
+
+  const dayStrip = useMemo(
+    () => Array.from({ length: 7 }, (_, index) => addDays(selectedDate, index - 3)),
+    [selectedKey]
+  );
 
   function refresh() {
     setPlanning(readPlanningItems());
@@ -219,8 +242,8 @@ export function DayOverview() {
     };
   }, []);
 
-  const linkedToday = useMemo<DayEvent[]>(() =>
-    planning.filter(item => occursOn(item, today)).map(item => ({
+  const linkedEvents = useMemo<DayEvent[]>(() =>
+    planning.filter(item => occursOn(item, selectedKey)).map(item => ({
       id: item.id,
       title: item.title,
       start: item.start,
@@ -231,10 +254,10 @@ export function DayOverview() {
       kind: item.kind,
       status: item.status,
       briefing: item.eventBriefing
-    })), [planning, today]);
+    })), [planning, selectedKey]);
 
-  const manualToday = useMemo<DayEvent[]>(() =>
-    manualEvents.filter(item => item.date === today).map(item => ({
+  const manualSelected = useMemo<DayEvent[]>(() =>
+    manualEvents.filter(item => item.date === selectedKey).map(item => ({
       id: item.id,
       title: item.title,
       start: item.start,
@@ -242,17 +265,17 @@ export function DayOverview() {
       source: item.category,
       sourceLabel: "Kalender",
       kind: item.category
-    })), [manualEvents, today]);
+    })), [manualEvents, selectedKey]);
 
   const events = useMemo(
-    () => [...linkedToday, ...manualToday].sort((a, b) => (a.start || "99:99").localeCompare(b.start || "99:99")),
-    [linkedToday, manualToday]
+    () => [...linkedEvents, ...manualSelected].sort((a, b) => (a.start || "99:99").localeCompare(b.start || "99:99")),
+    [linkedEvents, manualSelected]
   );
 
   const daySchedule = useMemo(
     () => [
-      ...todayRoutine.map(block => ({
-        id: block.id,
+      ...selectedRoutine.map(block => ({
+        id: block.id + "-" + selectedKey,
         title: block.title,
         start: block.start,
         end: block.end,
@@ -263,38 +286,38 @@ export function DayOverview() {
       })),
       ...events.map(event => ({ ...event, routine: false as const }))
     ].sort((a, b) => (a.start || "99:99").localeCompare(b.start || "99:99")),
-    [todayRoutine, events]
+    [selectedRoutine, events, selectedKey]
   );
 
   const tasks = useMemo<DayTask[]>(() => {
     const result: DayTask[] = [];
 
     planning.forEach(item => {
-      if ((item.kind === "Deadline" || item.kind === "Fokus") && item.date <= today) {
+      if ((item.kind === "Deadline" || item.kind === "Fokus") && item.date <= selectedKey) {
         result.push({
           id: "plan-" + item.id,
           title: item.title,
           detail: item.sourceLabel,
           source: item.source,
           dueDate: item.date,
-          overdue: item.date < today
+          overdue: item.date < selectedKey
         });
       }
 
       if (item.source === "Gesundheit" && item.intelligence?.timeline) {
         item.intelligence.timeline
-          .filter(entry => entry.status !== "done" && entry.dueDate && entry.dueDate <= today)
+          .filter(entry => entry.status !== "done" && entry.dueDate && entry.dueDate <= selectedKey)
           .forEach(entry => result.push({
             id: item.id + "-" + entry.id,
             title: entry.label,
             detail: entry.detail,
             source: "Gesundheit",
             dueDate: entry.dueDate,
-            overdue: Boolean(entry.dueDate && entry.dueDate < today)
+            overdue: Boolean(entry.dueDate && entry.dueDate < selectedKey)
           }));
       }
 
-      if (item.eventBriefing?.checklist && occursOn(item, today)) {
+      if (item.eventBriefing?.checklist && occursOn(item, selectedKey)) {
         item.eventBriefing.checklist
           .filter(entry => entry.status !== "done")
           .slice(0, 3)
@@ -308,34 +331,34 @@ export function DayOverview() {
     });
 
     return result;
-  }, [planning, today]);
+  }, [planning, selectedKey]);
 
   const socialFocus = useMemo(
     () => contacts
-      .map(contact => ({ contact, state: contactState(contact) }))
+      .map(contact => ({ contact, state: contactState(contact, selectedDate) }))
       .filter((item): item is { contact: SocialContact; state: { key: string; label: string; days: number } } => Boolean(item.state))
       .sort((a, b) => (a.state.key === "due" ? 0 : 1) - (b.state.key === "due" ? 0 : 1) || b.state.days - a.state.days)
       .slice(0, 4),
-    [contacts]
+    [contacts, selectedKey]
   );
 
-  const todayPayments = useMemo(
-    () => (finance.recurring ?? []).filter(item => item.dueDay === now.getDate()),
-    [finance, now]
+  const dayPayments = useMemo(
+    () => (finance.recurring ?? []).filter(item => item.dueDay === selectedDate.getDate()),
+    [finance, selectedKey]
   );
 
-  const tomorrowEvents = useMemo(() => {
-    const routine = tomorrowRoutine.map(item => ({
+  const nextDayEvents = useMemo(() => {
+    const routine = nextRoutine.map(item => ({
       title: item.title,
       start: item.start,
       source: item.detail
     }));
-    const linked = planning.filter(item => occursOn(item, tomorrow)).map(item => ({
+    const linked = planning.filter(item => occursOn(item, nextKey)).map(item => ({
       title: item.title,
       start: item.start,
       source: item.sourceLabel
     }));
-    const manual = manualEvents.filter(item => item.date === tomorrow).map(item => ({
+    const manual = manualEvents.filter(item => item.date === nextKey).map(item => ({
       title: item.title,
       start: item.start,
       source: item.category
@@ -343,47 +366,92 @@ export function DayOverview() {
     return [...routine, ...linked, ...manual]
       .sort((a, b) => (a.start || "99:99").localeCompare(b.start || "99:99"))
       .slice(0, 4);
-  }, [planning, manualEvents, tomorrow, tomorrowRoutine]);
+  }, [planning, manualEvents, nextKey, nextRoutine]);
 
   const nextEvent = useMemo(() => {
-    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    if (!daySchedule.length) return null;
+    if (!isToday) return daySchedule[0];
+
+    const time = `${String(realNow.getHours()).padStart(2, "0")}:${String(realNow.getMinutes()).padStart(2, "0")}`;
     return daySchedule.find(event => event.start && event.start >= time) ?? daySchedule.find(event => !event.start) ?? null;
-  }, [daySchedule, now]);
+  }, [daySchedule, isToday]);
 
   const summary = useMemo(() => {
-    if (!daySchedule.length && !tasks.length && !socialFocus.length && !todayPayments.length) {
-      return "Heute ist in JAN OS noch nichts Dringendes hinterlegt. Der Tag ist frei planbar.";
+    if (!daySchedule.length && !tasks.length && !socialFocus.length && !dayPayments.length) {
+      return isToday
+        ? "Heute ist in JAN OS noch nichts Dringendes hinterlegt. Der Tag ist frei planbar."
+        : "Für diesen Tag ist in JAN OS noch nichts Dringendes hinterlegt.";
     }
 
     const bits = [];
-    if (todayRoutine.length) bits.push("feste Tagesstruktur aktiv");
+    if (selectedRoutine.length) bits.push("feste Tagesstruktur");
     if (events.length) bits.push(`${events.length} Termin${events.length === 1 ? "" : "e"}`);
     if (tasks.length) bits.push(`${tasks.length} offene${tasks.length === 1 ? "r Punkt" : " Punkte"}`);
     if (socialFocus.length) bits.push(`${socialFocus.length} Kontakt${socialFocus.length === 1 ? "" : "e"} im Blick`);
-    if (todayPayments.length) bits.push(`${todayPayments.length} Belastung${todayPayments.length === 1 ? "" : "en"}`);
-    return "Heute: " + bits.join(", ") + ".";
-  }, [daySchedule, todayRoutine, events, tasks, socialFocus, todayPayments]);
+    if (dayPayments.length) bits.push(`${dayPayments.length} Belastung${dayPayments.length === 1 ? "" : "en"}`);
+    return (isToday ? "Heute: " : "An diesem Tag: ") + bits.join(", ") + ".";
+  }, [daySchedule, selectedRoutine, events, tasks, socialFocus, dayPayments, isToday]);
+
+  function goToToday() {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    setSelectedDate(today);
+  }
 
   return (
     <>
       <section className="day-hero">
         <div>
           <p className="eyebrow">MEIN TAG · LIVE AUS JAN OS</p>
-          <h1>{now.toLocaleDateString("de-DE", { weekday: "long" })}</h1>
-          <p>{now.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
+          <h1>{selectedDate.toLocaleDateString("de-DE", { weekday: "long" })}</h1>
+          <p>{selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
         </div>
         <div className="day-hero-summary">
           <Sparkles size={18} />
           <div>
-            <span>TAGESBRIEFING</span>
+            <span>{isToday ? "TAGESBRIEFING" : "TAGESVORSCHAU"}</span>
             <strong>{ready ? summary : "Tagesdaten werden geladen…"}</strong>
           </div>
         </div>
       </section>
 
+      <section className="day-browser" aria-label="Tage durchsuchen">
+        <button type="button" className="day-browser-arrow" onClick={() => setSelectedDate(addDays(selectedDate, -1))} aria-label="Vorheriger Tag">
+          <ChevronLeft size={18} />
+        </button>
+
+        <div className="day-browser-strip">
+          {dayStrip.map(date => {
+            const key = dateKey(date);
+            const selected = key === selectedKey;
+            const today = key === realTodayKey;
+            return (
+              <button
+                type="button"
+                key={key}
+                className={`day-browser-day ${selected ? "selected" : ""} ${today ? "today" : ""}`}
+                onClick={() => setSelectedDate(date)}
+              >
+                <span>{date.toLocaleDateString("de-DE", { weekday: "short" })}</span>
+                <strong>{date.getDate()}</strong>
+                <small>{date.toLocaleDateString("de-DE", { month: "short" })}</small>
+              </button>
+            );
+          })}
+        </div>
+
+        <button type="button" className="day-browser-arrow" onClick={() => setSelectedDate(addDays(selectedDate, 1))} aria-label="Nächster Tag">
+          <ChevronRight size={18} />
+        </button>
+
+        <button type="button" className="day-browser-today" onClick={goToToday} disabled={isToday}>
+          Heute
+        </button>
+      </section>
+
       <section className="day-priority-grid">
         <article className="day-priority-card main">
-          <span className="section-kicker">ALS NÄCHSTES</span>
+          <span className="section-kicker">{isToday ? "ALS NÄCHSTES" : "ERSTER PUNKT"}</span>
           {nextEvent ? (
             <>
               <h2>{nextEvent.title}</h2>
@@ -406,13 +474,13 @@ export function DayOverview() {
             </>
           ) : (
             <>
-              <h2>Kein fester nächster Punkt</h2>
-              <p>Der restliche Tag ist aktuell frei.</p>
+              <h2>Kein fester Punkt</h2>
+              <p>Dieser Tag ist aktuell frei planbar.</p>
             </>
           )}
         </article>
 
-        <article className="day-stat-card"><CalendarDays size={18} /><strong>{events.length}</strong><span>Termine heute</span></article>
+        <article className="day-stat-card"><CalendarDays size={18} /><strong>{events.length}</strong><span>Termine</span></article>
         <article className="day-stat-card"><ListChecks size={18} /><strong>{tasks.length}</strong><span>offene Punkte</span></article>
         <article className="day-stat-card"><UsersRound size={18} /><strong>{socialFocus.length}</strong><span>Kontakte im Blick</span></article>
       </section>
@@ -457,7 +525,7 @@ export function DayOverview() {
 
           <article className="day-panel">
             <div className="day-panel-head">
-              <div><span className="section-kicker">HANDLUNG</span><h2>Heute erledigen</h2></div>
+              <div><span className="section-kicker">HANDLUNG</span><h2>{isToday ? "Heute erledigen" : "An diesem Tag"}</h2></div>
               <CheckCircle2 size={17} />
             </div>
             {tasks.length ? (
@@ -466,7 +534,7 @@ export function DayOverview() {
                   <Link href={sourceHref(task.source)} key={task.id} className={task.overdue ? "overdue" : ""}>
                     <span className="day-task-check" />
                     <div><strong>{task.title}</strong><small>{task.detail || task.source}</small></div>
-                    {task.overdue ? <b>überfällig</b> : task.dueDate ? <time>heute</time> : null}
+                    {task.overdue ? <b>bis dahin offen</b> : task.dueDate ? <time>fällig</time> : null}
                     <ChevronRight size={14} />
                   </Link>
                 ))}
@@ -500,12 +568,12 @@ export function DayOverview() {
 
           <article className="day-panel">
             <div className="day-panel-head">
-              <div><span className="section-kicker">FINANZEN</span><h2>Heute fällig</h2></div>
+              <div><span className="section-kicker">FINANZEN</span><h2>{isToday ? "Heute fällig" : "An diesem Tag fällig"}</h2></div>
               <CircleDollarSign size={17} />
             </div>
-            {todayPayments.length ? (
+            {dayPayments.length ? (
               <div className="day-payment-list">
-                {todayPayments.map(payment => (
+                {dayPayments.map(payment => (
                   <Link href="/finanzen" key={payment.id}>
                     <div><strong>{payment.name}</strong><small>{payment.category || "Wiederkehrend"}</small></div>
                     <b>{euro(payment.amount)}</b>
@@ -513,18 +581,18 @@ export function DayOverview() {
                 ))}
               </div>
             ) : (
-              <div className="day-empty compact"><CircleDollarSign size={19} /><strong>Keine Belastung heute</strong></div>
+              <div className="day-empty compact"><CircleDollarSign size={19} /><strong>Keine Belastung</strong></div>
             )}
           </article>
 
           <article className="day-panel">
             <div className="day-panel-head">
-              <div><span className="section-kicker">MORGEN</span><h2>Kurzer Vorausblick</h2></div>
+              <div><span className="section-kicker">FOLGETAG</span><h2>{nextDate.toLocaleDateString("de-DE", { weekday: "long" })}</h2></div>
               <Clock3 size={17} />
             </div>
-            {tomorrowEvents.length ? (
+            {nextDayEvents.length ? (
               <div className="day-tomorrow-list">
-                {tomorrowEvents.map((event, index) => (
+                {nextDayEvents.map((event, index) => (
                   <div key={event.title + index}><time>{event.start || "Tag"}</time><div><strong>{event.title}</strong><small>{event.source}</small></div></div>
                 ))}
               </div>
@@ -537,11 +605,11 @@ export function DayOverview() {
 
       <section className="day-footer-action">
         <div>
-          <span className="section-kicker">EINE SICHT · ALLE QUELLEN</span>
-          <h2>Mein Tag besitzt keine eigenen Daten.</h2>
-          <p>Kalender, Projekte, Gesundheit, Leben und Finanzen bleiben die Quellen. Diese Ansicht sortiert sie nur für heute zusammen.</p>
+          <span className="section-kicker">TAG FÜR TAG</span>
+          <h2>Jeder Tag ist direkt durchblätterbar.</h2>
+          <p>Routine, Kalender, Projekte, Gesundheit, Leben und Finanzen werden für das gewählte Datum zusammengeführt.</p>
         </div>
-        <Link href="/kalender">Tag weiterplanen <ExternalLink size={14} /></Link>
+        <Link href="/kalender">Im Kalender planen <ExternalLink size={14} /></Link>
       </section>
     </>
   );

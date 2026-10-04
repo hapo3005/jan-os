@@ -4421,3 +4421,186 @@ footer {
   .health-travel-compact .health-travel-actions { grid-column: auto; }
   .health-clinic-strip { grid-template-columns: 1fr; }
 }
+
+
+/* Leben · Menschen & Kontakte als integrierter Kernbereich */
+.social-hub-primary {
+  margin-top: 16px;
+  scroll-margin-top: 20px;
+}
+.social-directory-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+.social-directory-head h2 {
+  margin: 6px 0 6px;
+  font-size: 20px;
+  letter-spacing: -.02em;
+}
+.social-directory-head p {
+  max-width: 700px;
+  margin: 0;
+  color: #6f8496;
+  font-size: 9px;
+  line-height: 1.55;
+}
+.social-search {
+  width: min(280px,100%);
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #fff;
+  color: #71879a;
+}
+.social-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #24394c;
+  font: inherit;
+  font-size: 9px;
+}
+.social-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+.social-subhead h3 {
+  margin: 5px 0 0;
+  color: #24394c;
+  font-size: 13px;
+}
+.social-subhead > span {
+  color: #7a8fa1;
+  font-size: 8px;
+}
+.social-focus-block {
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid #d8e6f2;
+  border-radius: 13px;
+  background: #f7fbfe;
+}
+.social-focus-list {
+  display: grid;
+  gap: 7px;
+}
+.social-focus-card {
+  display: grid;
+  grid-template-columns: auto minmax(160px,1fr) minmax(130px,.7fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid #e1eaf1;
+  border-radius: 10px;
+  background: #fff;
+}
+.social-focus-card > div:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+.social-focus-card > div:nth-child(2) strong {
+  color: #283d50;
+  font-size: 9px;
+}
+.social-focus-card > div:nth-child(2) span {
+  color: #7a8ea0;
+  font-size: 7.5px;
+}
+.social-focus-card > button {
+  min-height: 31px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid #d5e6f3;
+  border-radius: 9px;
+  background: #f2f8fd;
+  color: #3479b3;
+  font-size: 8px;
+  cursor: pointer;
+}
+.social-directory {
+  margin-top: 14px;
+}
+.social-groups {
+  display: grid;
+  gap: 10px;
+}
+.social-group {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fbfcfe;
+}
+.social-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: #f6f9fc;
+}
+.social-group-head strong {
+  color: #36536b;
+  font-size: 9px;
+}
+.social-group-head span {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #71879a;
+  font-size: 7.5px;
+  border: 1px solid #dfe7ee;
+}
+.social-group .social-contact-list {
+  margin: 0;
+  padding: 7px;
+}
+.social-group .social-contact-row {
+  border: 0;
+  border-bottom: 1px solid #e5ebf0;
+  border-radius: 0;
+  background: transparent;
+}
+.social-group .social-contact-row:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 900px) {
+  .social-directory-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .social-search {
+    width: 100%;
+  }
+  .social-focus-card {
+    grid-template-columns: auto 1fr auto;
+  }
+  .social-focus-card .social-state {
+    grid-column: 2;
+  }
+}
+@media (max-width: 620px) {
+  .social-focus-card {
+    grid-template-columns: auto 1fr;
+  }
+  .social-focus-card > button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

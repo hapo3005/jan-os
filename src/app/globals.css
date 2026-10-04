@@ -1,22 +1,24 @@
 :root {
-  --bg: #071019;
-  --bg-deep: #050a10;
-  --surface: rgba(13, 24, 35, 0.82);
-  --surface-strong: rgba(16, 29, 42, 0.96);
-  --surface-soft: rgba(255, 255, 255, 0.035);
-  --border: rgba(151, 177, 201, 0.14);
-  --border-strong: rgba(151, 177, 201, 0.22);
-  --text: #f2f6f9;
-  --muted: #8fa1b2;
-  --muted-2: #65788a;
-  --blue: #56b9ff;
-  --cyan: #6ee7df;
-  --amber: #f5b95f;
-  --red: #ff7474;
+  color-scheme: light;
+  --bg: #f4f7fb;
+  --bg-deep: #edf3f9;
+  --surface: rgba(255, 255, 255, 0.96);
+  --surface-strong: #ffffff;
+  --surface-soft: rgba(47, 128, 237, 0.055);
+  --border: #d7e2ee;
+  --border-strong: #c5d4e3;
+  --text: #14202b;
+  --muted: #5f7285;
+  --muted-2: #7e92a6;
+  --blue: #2f80ed;
+  --cyan: #4cb1f8;
+  --amber: #f2b24c;
+  --red: #e66a6a;
+  --green: #2fb67c;
   --sidebar: 244px;
   --radius-lg: 22px;
   --radius-md: 16px;
-  --shadow: 0 22px 60px rgba(0, 0, 0, 0.25);
+  --shadow: 0 12px 34px rgba(25, 55, 89, 0.08);
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--bg-deep); }
@@ -1659,4 +1661,470 @@ footer { display:flex; justify-content:space-between; gap:12px; padding:20px 3px
   .project-planner-stats div { min-height: 72px; border-right: 0; border-bottom: 1px solid var(--border); }
   .project-planner-stats div:last-child { border-bottom: 0; }
   .project-planner-head { align-items: flex-start; flex-direction: column; }
+}
+
+/* JAN OS · Light Premium Theme */
+html {
+  background: var(--bg-deep);
+}
+
+body {
+  color: var(--text);
+  background:
+    radial-gradient(circle at 78% -12%, rgba(47, 128, 237, .10), transparent 32%),
+    radial-gradient(circle at 12% 115%, rgba(76, 177, 248, .08), transparent 30%),
+    linear-gradient(180deg, #f7f9fc 0%, #edf3f9 100%);
+}
+
+.sidebar {
+  border-right-color: var(--border);
+  background: rgba(250, 252, 255, .94);
+  box-shadow: 12px 0 30px rgba(43, 71, 101, .035);
+}
+
+.brand,
+.mobile-brand {
+  color: #13263a;
+}
+
+.nav-item {
+  color: #667b8f;
+}
+
+.nav-item:hover {
+  color: #1a2f43;
+  background: #f1f6fb;
+}
+
+.nav-item.active {
+  color: #1f69b8;
+  background: linear-gradient(90deg, #e7f2ff 0%, #f3f8fe 100%);
+  border-color: #d8e9fa;
+  box-shadow: inset 3px 0 0 #2f80ed;
+}
+
+.profile,
+.sidebar-divider {
+  border-color: var(--border);
+}
+
+.avatar {
+  color: #25425c;
+  background: linear-gradient(145deg, #ffffff, #eef4fa);
+}
+
+.profile strong { color: #1a2b3b; }
+.profile span { color: #8092a3; }
+.clock { color: #50677c; }
+
+.icon-button {
+  border-color: var(--border);
+  background: rgba(255,255,255,.82);
+  color: #536a7f;
+  box-shadow: 0 4px 14px rgba(31, 67, 104, .05);
+}
+
+.icon-button:hover {
+  border-color: #a9cff3;
+  background: #eef7ff;
+  color: #236fb8;
+}
+
+.notification-dot {
+  background: #e66a6a;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.eyebrow,
+.section-kicker {
+  color: #6484a0;
+}
+
+.hero,
+.module-hero,
+.life-hero-copy,
+.calendar-hero,
+.project-planner-hero {
+  border-color: var(--border);
+  background:
+    radial-gradient(circle at 84% 8%, rgba(47,128,237,.11), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #f5f9fd 56%, #edf5fc 100%);
+  box-shadow: var(--shadow);
+}
+
+.hero-glow {
+  background: rgba(47,128,237,.09);
+}
+
+.hero-copy,
+.module-hero p:not(.eyebrow),
+.life-hero-copy > p:last-child,
+.calendar-hero p:not(.eyebrow),
+.project-planner-hero p:not(.eyebrow) {
+  color: #617588;
+}
+
+.status-chip,
+.module-status {
+  border-color: #cfe3f7;
+  background: #edf6ff;
+  color: #2c6fae;
+}
+
+.status-chip.muted {
+  color: #6e8194;
+  border-color: var(--border);
+  background: #f7f9fc;
+}
+
+.attention-panel,
+.panel,
+.projects-section,
+.next-action,
+.module-feature-card,
+.module-focus-panel,
+.life-hero-copy,
+.life-overview,
+.life-today-card,
+.life-upcoming-card,
+.life-area-card,
+.life-system-strip,
+.social-empty,
+.social-kpis,
+.social-contact-list,
+.social-local-footer,
+.calendar-main,
+.calendar-stats,
+.calendar-upcoming,
+.calendar-principle,
+.calendar-integration,
+.project-planner-stats,
+.project-planner-board {
+  border-color: var(--border);
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 10px 30px rgba(31, 67, 104, .055);
+}
+
+.attention-card,
+.project-card,
+.life-today-row,
+.life-upcoming-icon,
+.life-social-goal,
+.social-contact-row,
+.calendar-toolbar,
+.calendar-view-switch,
+.project-planner-row,
+.project-planner-rule,
+.calendar-linked-info {
+  border-color: var(--border);
+  background: #f9fbfd;
+}
+
+.attention-card:hover,
+.project-card:hover,
+.life-today-row:hover,
+.life-area-card:hover {
+  border-color: #b9d7f3;
+  background: #f2f8fe;
+}
+
+.attention-icon,
+.life-area-icon,
+.social-empty-icon,
+.social-avatar,
+.project-plan-icon {
+  border-color: #d5e6f6;
+  background: #eef6fd;
+  color: #347dbb;
+}
+
+.metric-row,
+.week-metrics > div,
+.project-card p,
+.next-action p,
+.module-feature-card p,
+.module-focus-panel p,
+.life-area-card p,
+.life-overview-item span,
+.life-task-copy small,
+.life-upcoming-row span:not(.life-upcoming-icon),
+.social-contact-copy span,
+.social-frequency span,
+.social-state span,
+.calendar-upcoming-row span,
+.calendar-upcoming-row small,
+.calendar-principle span,
+.calendar-integration p,
+.project-planner-row span,
+.project-planner-rule span {
+  color: var(--muted);
+}
+
+.card-chevron,
+.project-top > svg,
+.life-today-row > svg,
+.life-upcoming-row > svg,
+.social-passive,
+.calendar-side-head svg,
+.calendar-free {
+  color: #8ca0b3;
+}
+
+.mini-progress,
+.week-metrics i,
+.project-progress i {
+  background: #e8eff6;
+}
+
+.score-ring {
+  background:
+    radial-gradient(circle at center, #ffffff 62%, transparent 64%),
+    conic-gradient(#4cb1f8 0 67%, #e4edf5 67% 100%);
+  box-shadow: 0 0 26px rgba(47,128,237,.06);
+}
+
+.bar {
+  background: linear-gradient(180deg, #cfdae4, #b9c8d7);
+}
+
+.module-strip {
+  border-color: var(--border);
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 8px 26px rgba(31,67,104,.04);
+}
+
+.module-strip a {
+  color: #6b8094;
+  border-right-color: var(--border);
+}
+
+.module-strip a:hover {
+  color: #246fb8;
+  background: #eef7ff;
+}
+
+.module-card-index {
+  color: rgba(63, 94, 122, .07);
+}
+
+.module-feature-card button,
+.life-area-link,
+.life-system-strip button {
+  color: #347fbd;
+}
+
+.module-focus-list span {
+  border-color: #d5e8f4;
+  background: #f0f8fb;
+  color: #3e7f90;
+}
+
+.life-overview-item,
+.life-upcoming-row,
+.social-contact-row,
+.calendar-upcoming-row {
+  border-color: var(--border);
+}
+
+.life-live-dot,
+.calendar-hero-actions > span,
+.project-planner-actions > span,
+.project-planner-head > span {
+  color: #71869a;
+}
+
+.life-task-index {
+  color: #96a7b7;
+}
+
+.life-today-footer,
+.life-area-meta,
+.social-import-message,
+.social-local-footer,
+.calendar-stats span,
+.project-planner-stats span {
+  color: #788c9f;
+}
+
+.life-system-strip strong,
+.social-contact-copy strong,
+.calendar-empty strong,
+.project-planner-empty strong {
+  color: #25394b;
+}
+
+.social-import-button,
+.social-contact-row button,
+.calendar-integration-status {
+  border-color: #cfe3f3;
+  background: #eef8fb;
+  color: #347b88;
+}
+
+.social-local-footer label,
+.social-local-footer button,
+.project-planner-row > button,
+.calendar-nav > button:not(.calendar-today-button) {
+  border-color: var(--border);
+  background: #f8fafc;
+  color: #6d8294;
+}
+
+.social-kpis .attention strong {
+  color: #d08c28;
+}
+
+.calendar-toolbar {
+  box-shadow: 0 8px 24px rgba(31,67,104,.035);
+}
+
+.calendar-nav h2,
+.calendar-day-head strong,
+.calendar-month-cell > strong,
+.calendar-stats strong,
+.calendar-side-head h3,
+.calendar-integration h2,
+.project-planner-head h2,
+.project-planner-row strong {
+  color: #1d3042;
+}
+
+.calendar-today-button,
+.calendar-view-switch button.active {
+  border-color: #c9e1f5;
+  background: #eaf4fd;
+  color: #2c72b0;
+}
+
+.calendar-view-switch {
+  background: #f6f9fc;
+}
+
+.calendar-day.today {
+  background: #f4f9fe;
+}
+
+.calendar-day-head,
+.calendar-day,
+.calendar-month-weekdays,
+.calendar-month-cell {
+  border-color: var(--border);
+}
+
+.calendar-day-head span,
+.calendar-month-weekdays span {
+  color: #7a8fa3;
+}
+
+.calendar-day.today .calendar-day-head strong,
+.calendar-month-cell.today > strong {
+  background: #2f80ed;
+  color: #fff;
+}
+
+.calendar-event {
+  border-color: #cfe3f5;
+  border-left-color: var(--blue);
+  background: #eef6fd;
+}
+
+.calendar-event strong {
+  color: #203447;
+}
+
+.calendar-event small,
+.calendar-event span,
+.calendar-month-event,
+.calendar-month-cell small {
+  color: #667d90;
+}
+
+.calendar-category-dot.privat { border-color: #8fa1b2; }
+.calendar-category-dot.kiss { border-color: #33aa99; }
+.calendar-category-dot.gesundheit { border-color: #2fb67c; }
+.calendar-category-dot.projekt { border-color: #8b6fd1; }
+.calendar-category-dot.deadline { border-color: #e6a437; }
+.calendar-category-dot.fokus { border-color: #2f80ed; }
+
+.calendar-principle > svg,
+.project-planner-rule > svg {
+  color: #2f80ed;
+}
+
+.calendar-linked-info {
+  border-color: #d7e7f5;
+  background: #f3f8fd;
+}
+
+.calendar-linked-info > svg {
+  color: #3e86c3;
+}
+
+.calendar-modal-backdrop {
+  background: rgba(35, 54, 72, .28);
+  backdrop-filter: blur(7px);
+}
+
+.calendar-modal {
+  border-color: #c8d7e5;
+  background: #ffffff;
+  box-shadow: 0 26px 80px rgba(28, 53, 79, .18);
+}
+
+.calendar-modal-head button {
+  border-color: var(--border);
+  background: #f7f9fc;
+  color: #667b8e;
+}
+
+.calendar-modal label > span {
+  color: #688095;
+}
+
+.calendar-modal input,
+.calendar-modal select {
+  border-color: var(--border);
+  background: #f8fafc;
+  color: #1d3042;
+}
+
+.calendar-modal input:focus,
+.calendar-modal select:focus {
+  border-color: #8dbce8;
+  box-shadow: 0 0 0 3px rgba(47,128,237,.08);
+}
+
+.calendar-modal select option {
+  background: #ffffff;
+  color: #1d3042;
+}
+
+.calendar-modal-actions button {
+  border-color: var(--border);
+  background: #f7f9fc;
+  color: #667b8e;
+}
+
+.primary-button,
+.calendar-hero-actions button,
+.calendar-modal-actions button:last-child {
+  border-color: #2f80ed;
+  background: linear-gradient(180deg, #3b8cf0, #2f80ed);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(47,128,237,.18);
+}
+
+.project-planner-actions button {
+  border-color: #416fd3;
+  background: linear-gradient(180deg, #5e82df, #4667c9);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(70,103,201,.16);
+}
+
+.status-dot.red { background: #e66a6a; box-shadow: 0 0 12px rgba(230,106,106,.25); }
+.status-dot.blue { background: #2f80ed; box-shadow: 0 0 12px rgba(47,128,237,.22); }
+.status-dot.amber { background: #f2b24c; box-shadow: 0 0 12px rgba(242,178,76,.22); }
+
+footer {
+  color: #8394a5;
 }

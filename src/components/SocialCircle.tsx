@@ -128,6 +128,7 @@ export function SocialCircle() {
         persist(imported);
         setMessage(`${imported.length} Kontakte lokal übernommen`);
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        window.setTimeout(() => document.getElementById("menschen")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
       } else {
         const stored = window.localStorage.getItem(STORAGE_KEY);
         if (stored) {

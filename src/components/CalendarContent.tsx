@@ -13,6 +13,12 @@ import {
   X
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  PlanningItem,
+  PLANNING_EVENT,
+  PLANNING_STORAGE_KEY,
+  readPlanningItems
+} from "@/lib/planning";
 
 type CalendarView = "month" | "week";
 
@@ -23,6 +29,8 @@ type CalendarEvent = {
   start: string;
   end: string;
   category: "Privat" | "KISS" | "Gesundheit" | "Projekt" | "Deadline" | "Fokus";
+  origin?: "manual" | "linked";
+  sourceLabel?: string;
 };
 
 const STORAGE_KEY = "jan-os-calendar-events-v1";
@@ -74,25 +82,55 @@ function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function planningToCalendar(item: PlanningItem): CalendarEvent {
+  return {
+    id: "linked-" + item.id,
+    title: item.title,
+    date: item.date,
+    start: item.start,
+    end: item.end,
+    category: item.kind === "Termin" ? "Projekt" : item.kind,
+    origin: "linked",
+    sourceLabel: item.sourceLabel
+  };
+}
+
 export function CalendarContent() {
   const [view, setView] = useState<CalendarView>("week");
   const [cursor, setCursor] = useState(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [linkedItems, setLinkedItems] = useState<PlanningItem[]>([]);
   const [ready, setReady] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
+    function refreshLinked() {
+      setLinkedItems(readPlanningItems());
+    }
+
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) setEvents(parsed);
       }
+      refreshLinked();
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     } finally {
       setReady(true);
     }
+
+    window.addEventListener(PLANNING_EVENT, refreshLinked);
+    const storageListener = (event: StorageEvent) => {
+      if (event.key === PLANNING_STORAGE_KEY) refreshLinked();
+    };
+    window.addEventListener("storage", storageListener);
+
+    return () => {
+      window.removeEventListener(PLANNING_EVENT, refreshLinked);
+      window.removeEventListener("storage", storageListener);
+    };
   }, []);
 
   function persist(next: CalendarEvent[]) {
@@ -118,6 +156,13 @@ export function CalendarContent() {
     setCursor(next);
   }
 
+  const linkedEvents = useMemo(() => linkedItems.map(planningToCalendar), [linkedItems]);
+  const allEvents = useMemo(
+    () => [...events.map(item => ({ ...item, origin: item.origin ?? "manual" as const })), ...linkedEvents]
+      .sort((a, b) => (a.date + "T" + a.start).localeCompare(b.date + "T" + b.start)),
+    [events, linkedEvents]
+  );
+
   const today = new Date();
   const weekStart = startOfWeek(cursor);
   const weekDays = useMemo(
@@ -133,13 +178,13 @@ export function CalendarContent() {
 
   const upcoming = useMemo(() => {
     const nowKey = dateKey(today);
-    return events
+    return allEvents
       .filter(item => item.date >= nowKey)
       .slice(0, 6);
-  }, [events, today.getDate(), today.getMonth(), today.getFullYear()]);
+  }, [allEvents, today.getDate(), today.getMonth(), today.getFullYear()]);
 
-  const todayEvents = events.filter(item => item.date === dateKey(today));
-  const weekEventCount = events.filter(item =>
+  const todayEvents = allEvents.filter(item => item.date === dateKey(today));
+  const weekEventCount = allEvents.filter(item =>
     weekDays.some(day => dateKey(day) === item.date)
   ).length;
 
@@ -184,7 +229,7 @@ export function CalendarContent() {
           {view === "week" ? (
             <div className="calendar-week">
               {weekDays.map(day => {
-                const items = events.filter(event => event.date === dateKey(day));
+                const items = allEvents.filter(event => event.date === dateKey(day));
                 return (
                   <div className={sameDay(day, today) ? "calendar-day today" : "calendar-day"} key={dateKey(day)}>
                     <div className="calendar-day-head">
@@ -197,12 +242,12 @@ export function CalendarContent() {
                           type="button"
                           className={`calendar-event ${item.category.toLowerCase()}`}
                           key={item.id}
-                          onDoubleClick={() => deleteEvent(item.id)}
-                          title="Doppelklick zum Löschen"
+                          onDoubleClick={() => item.origin !== "linked" && deleteEvent(item.id)}
+                          title={item.origin === "linked" ? "Automatisch aus JAN OS verknüpft" : "Doppelklick zum Löschen"}
                         >
                           <small>{item.start || "ganztägig"}</small>
                           <strong>{item.title}</strong>
-                          <span>{item.category}</span>
+                          <span>{item.sourceLabel ? item.sourceLabel + " · " : ""}{item.category}{item.origin === "linked" ? " · verknüpft" : ""}</span>
                         </button>
                       )) : (
                         <span className="calendar-free">frei</span>
@@ -219,7 +264,7 @@ export function CalendarContent() {
               </div>
               <div className="calendar-month-grid">
                 {monthCells.map(day => {
-                  const items = events.filter(event => event.date === dateKey(day));
+                  const items = allEvents.filter(event => event.date === dateKey(day));
                   const muted = day.getMonth() !== cursor.getMonth();
                   return (
                     <div
@@ -234,7 +279,7 @@ export function CalendarContent() {
                       <div>
                         {items.slice(0, 3).map(item => (
                           <span className={`calendar-month-event ${item.category.toLowerCase()}`} key={item.id}>
-                            {item.start ? `${item.start} · ` : ""}{item.title}
+                            {item.start ? `${item.start} · ` : ""}{item.title}{item.origin === "linked" ? " ↗" : ""}
                           </span>
                         ))}
                         {items.length > 3 ? <small>+{items.length - 3} weitere</small> : null}
@@ -251,7 +296,7 @@ export function CalendarContent() {
           <div className="calendar-stats">
             <div><strong>{todayEvents.length}</strong><span>heute</span></div>
             <div><strong>{weekEventCount}</strong><span>diese Woche</span></div>
-            <div><strong>{events.length}</strong><span>lokal geplant</span></div>
+            <div><strong>{linkedItems.length}</strong><span>automatisch verknüpft</span></div>
           </div>
 
           <div className="calendar-upcoming">
@@ -275,7 +320,7 @@ export function CalendarContent() {
                         {item.start ? ` · ${item.start}` : ""}
                       </span>
                     </div>
-                    <small>{item.category}</small>
+                    <small>{item.sourceLabel || item.category}</small>
                   </div>
                 ))}
               </div>
@@ -292,7 +337,15 @@ export function CalendarContent() {
             <Focus size={18} />
             <div>
               <strong>Zeit ist mehr als Termine.</strong>
-              <span>Fokusblöcke, Deadlines und freie Zeit werden gleichwertig sichtbar.</span>
+              <span>Fokusblöcke, Deadlines und Projekttermine laufen automatisch in diese Ansicht.</span>
+            </div>
+          </div>
+
+          <div className="calendar-linked-info">
+            <CalendarDays size={17} />
+            <div>
+              <strong>{linkedItems.length} aus JAN OS verknüpft</strong>
+              <span>Projektplanung erscheint hier automatisch und bleibt an der Quelle bearbeitbar.</span>
             </div>
           </div>
         </aside>
@@ -300,14 +353,14 @@ export function CalendarContent() {
 
       <section className="calendar-integration">
         <div>
-          <span className="section-kicker">SPÄTERE GOOGLE-INTEGRATION</span>
-          <h2>Die Oberfläche steht vor der Verbindung.</h2>
+          <span className="section-kicker">JAN OS ZEIT-ENGINE</span>
+          <h2>Einmal planen, automatisch überall sichtbar.</h2>
           <p>
-            Lokale Termine können wir später auf Google Calendar abbilden. Bis dahin bleibt
-            dieser Bereich vollständig nutzbar, ohne Kontodaten im öffentlichen Repository.
+            Projekttermine, Deadlines und Fokusblöcke werden bereits automatisch übernommen.
+            Google Calendar wird später nur noch die externe Synchronisationsschicht darüber.
           </p>
         </div>
-        <span className="calendar-integration-status"><CheckCircle2 size={14} /> vorbereitet</span>
+        <span className="calendar-integration-status"><CheckCircle2 size={14} /> intern verknüpft</span>
       </section>
 
       {showForm ? (

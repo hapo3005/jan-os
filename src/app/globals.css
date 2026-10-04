@@ -665,3 +665,173 @@ footer { display:flex; justify-content:space-between; gap:12px; padding:20px 3px
     flex-direction: column;
   }
 }
+
+
+/* Leben · sozialer Rhythmus */
+.life-social-section {
+  margin-top: 18px;
+}
+.life-social-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .78fr);
+  gap: 12px;
+}
+.life-social-goals,
+.life-social-assist,
+.life-rhythm-table,
+.life-social-privacy {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(14, 26, 38, .88), rgba(8, 17, 26, .9));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .13);
+}
+.life-social-goals {
+  padding: 22px;
+  border-radius: var(--radius-lg);
+}
+.life-social-goal-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.life-social-goal-head h3 {
+  margin: 5px 0 0;
+  font-size: 18px;
+  letter-spacing: -.025em;
+}
+.life-social-goal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+.life-social-goal {
+  min-height: 95px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .022);
+}
+.life-social-goal strong {
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -.05em;
+}
+.life-social-goal span {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.life-social-note {
+  margin: 16px 0 0;
+  color: #72889a;
+  font-size: 9px;
+  line-height: 1.6;
+}
+.life-social-assist {
+  display: grid;
+  align-content: center;
+  padding: 14px 20px;
+  border-radius: var(--radius-lg);
+}
+.life-social-assist-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 11px;
+  align-items: start;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.life-social-assist-row:last-child { border-bottom: 0; }
+.life-social-assist-row > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(110, 231, 223, .16);
+  border-radius: 10px;
+  background: rgba(110, 231, 223, .045);
+  color: var(--cyan);
+}
+.life-social-assist-row strong {
+  display: block;
+  font-size: 11px;
+}
+.life-social-assist-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.55;
+}
+.life-rhythm-table {
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+.life-rhythm-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.15fr) minmax(180px, .85fr) minmax(210px, 1fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 55px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border);
+  color: #91a4b5;
+  font-size: 10px;
+}
+.life-rhythm-row:last-child { border-bottom: 0; }
+.life-rhythm-row.header {
+  min-height: 43px;
+  background: rgba(86, 185, 255, .045);
+  color: #657b8e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.life-rhythm-row strong {
+  color: #d5e1e9;
+  font-size: 10px;
+}
+.life-social-privacy {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  color: #758b9c;
+  font-size: 9px;
+  line-height: 1.55;
+}
+.life-social-privacy svg {
+  flex: 0 0 auto;
+  color: var(--cyan);
+}
+
+@media (max-width: 980px) {
+  .life-social-summary { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .life-social-goal-grid { grid-template-columns: 1fr; }
+  .life-rhythm-table {
+    display: grid;
+    gap: 8px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .life-rhythm-row,
+  .life-rhythm-row.header {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(14, 26, 38, .88), rgba(8, 17, 26, .9));
+  }
+  .life-rhythm-row.header { display: none; }
+}

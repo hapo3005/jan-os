@@ -32,12 +32,6 @@ const todayItems = [
 
 const lifeAreas = [
   {
-    title: "Gemeinsam & Familie",
-    description: "Gemeinsame Vorhaben, wichtige Anlässe, Familienkontakte und Dinge, die ihr zusammen erledigen wollt.",
-    meta: "2 aktive Themen",
-    icon: Users
-  },
-  {
     title: "Wohnen & Haushalt",
     description: "Anschaffungen, Reparaturen, Einrichtung und alles, was zuhause organisiert werden muss.",
     meta: "3 offene Punkte",
@@ -100,6 +94,8 @@ export function LifeContent() {
         </div>
       </section>
 
+      <SocialCircle />
+
       <section className="life-main-grid">
         <article className="life-today-card">
           <div className="life-card-head">
@@ -153,7 +149,6 @@ export function LifeContent() {
           </div>
         </article>
       </section>
-      <SocialCircle />
 
       <section className="life-area-section">
         <div className="life-section-title">

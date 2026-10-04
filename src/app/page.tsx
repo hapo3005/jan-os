@@ -98,6 +98,16 @@ export default function HomePage() {
           <p className="hero-copy">
             Alles Wichtige an einem Ort – fokussiert auf das, was als Nächstes zählt.
           </p>
+
+          <Link href="/tag" className="hero-day-button">
+            <span className="hero-day-icon"><CalendarDays size={19} /></span>
+            <span>
+              <strong>Mein Tag</strong>
+              <small>Termine, Aufgaben, Menschen & Hinweise für heute</small>
+            </span>
+            <ChevronRight size={18} />
+          </Link>
+
           <div className="hero-meta">
             <span className="status-chip"><span /> System im Aufbau</span>
             <span className="status-chip muted">Demo-Daten aktiv</span>

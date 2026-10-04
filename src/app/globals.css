@@ -2673,3 +2673,206 @@ footer {
   .health-travel p,
   .health-travel-actions { grid-column: auto; }
 }
+
+
+/* Kalender · intelligentes Event-Briefing */
+.event-briefing {
+  margin-top: 14px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 10px 30px rgba(31,67,104,.055);
+}
+.event-briefing-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.event-briefing-head h2 {
+  margin: 6px 0;
+  font-size: 21px;
+  letter-spacing: -.025em;
+}
+.event-briefing-head p {
+  max-width: 780px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+.event-briefing-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid #d5e5f4;
+  border-radius: 999px;
+  background: #f1f7fd;
+  color: #377db8;
+  font-size: 8px;
+}
+.event-briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.event-briefing-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfcfe;
+}
+.event-briefing-card.recommendation {
+  background: linear-gradient(135deg,#f4f9fe,#f8fbfd);
+  border-color: #d6e6f4;
+}
+.event-briefing-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #347fbd;
+}
+.event-briefing-card-head strong { color: #203447; font-size: 11px; }
+.event-briefing-facts {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+  margin-top: 13px;
+}
+.event-briefing-facts div,
+.event-briefing-travel > div:not(.event-briefing-links) {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: white;
+}
+.event-briefing-facts span,
+.event-briefing-travel span {
+  color: #7890a3;
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.event-briefing-facts strong,
+.event-briefing-travel strong {
+  color: #263b4d;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.event-briefing-card > p {
+  margin: 13px 0 0;
+  color: #526a7d;
+  font-size: 10px;
+  line-height: 1.65;
+}
+.event-briefing-tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.event-briefing-tips span {
+  padding: 6px 8px;
+  border: 1px solid #d7e7f4;
+  border-radius: 999px;
+  background: #f0f7fc;
+  color: #4d708c;
+  font-size: 8px;
+}
+.event-briefing-travel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 13px;
+}
+.event-briefing-travel p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #60788c;
+  font-size: 9px;
+  line-height: 1.55;
+}
+.event-briefing-links {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.event-briefing-links a,
+.event-briefing-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border: 1px solid #d5e5f3;
+  border-radius: 8px;
+  background: #f1f7fc;
+  color: #3378b3;
+  font-size: 8px;
+}
+.event-briefing-checks {
+  display: grid;
+  gap: 8px;
+  margin-top: 13px;
+}
+.event-briefing-checks > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+}
+.event-briefing-checks > div > span {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c5d5e3;
+  border-radius: 5px;
+  background: white;
+  color: white;
+  font-size: 10px;
+}
+.event-briefing-checks > div > span.done {
+  border-color: #2fb67c;
+  background: #2fb67c;
+}
+.event-briefing-checks div div { display: grid; gap: 3px; }
+.event-briefing-checks strong { color: #2a3f52; font-size: 9px; }
+.event-briefing-checks small { color: #768b9d; font-size: 8px; line-height: 1.45; }
+.event-briefing-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+  color: #788c9e;
+  font-size: 8px;
+}
+.event-briefing-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+@media (max-width: 900px) {
+  .event-briefing-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 650px) {
+  .event-briefing-head,
+  .event-briefing-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .event-briefing-facts,
+  .event-briefing-travel { grid-template-columns: 1fr; }
+  .event-briefing-travel p,
+  .event-briefing-links { grid-column: auto; }
+}

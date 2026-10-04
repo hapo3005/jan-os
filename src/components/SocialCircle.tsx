@@ -23,6 +23,11 @@ type SocialContact = {
   closeness: string;
   frequency: string;
   lastContact: string | null;
+  birthday?: string;
+  phone?: string;
+  email?: string;
+  whatsapp?: string;
+  preferredContact?: string;
   occupation?: string;
   hobbies?: string;
   interests?: string;
@@ -247,6 +252,11 @@ export function SocialCircle() {
         contact.relationNadine,
         contact.closeness,
         contact.frequency,
+        contact.birthday,
+        contact.phone,
+        contact.email,
+        contact.whatsapp,
+        contact.preferredContact,
         contact.occupation,
         contact.hobbies,
         contact.interests,
@@ -354,9 +364,15 @@ export function SocialCircle() {
                             {contact.relationJan || "Beziehung offen"}
                             {contact.relationNadine ? ` · Nadine: ${contact.relationNadine}` : ""}
                           </span>
-                          {contact.occupation || contact.hobbies || contact.interests ? (
+                          {contact.birthday || contact.preferredContact || contact.occupation || contact.hobbies || contact.interests ? (
                             <small>
-                              {[contact.occupation, contact.hobbies, contact.interests].filter(Boolean).join(" · ")}
+                              {[
+                                contact.birthday ? "Geb. " + new Date(contact.birthday + "T12:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : "",
+                                contact.preferredContact ? "am liebsten " + contact.preferredContact : "",
+                                contact.occupation,
+                                contact.hobbies,
+                                contact.interests
+                              ].filter(Boolean).join(" · ")}
                             </small>
                           ) : null}
                         </button>
@@ -428,6 +444,11 @@ function ContactForm({
     closeness: "normal",
     frequency: "noch festlegen",
     lastContact: null,
+    birthday: "",
+    phone: "",
+    email: "",
+    whatsapp: "",
+    preferredContact: "",
     occupation: "",
     hobbies: "",
     interests: "",
@@ -447,6 +468,11 @@ function ContactForm({
       circle: form.circle.trim() || "Sonstige",
       relationJan: form.relationJan.trim(),
       relationNadine: form.relationNadine.trim(),
+      birthday: form.birthday || "",
+      phone: form.phone?.trim() || "",
+      email: form.email?.trim() || "",
+      whatsapp: form.whatsapp?.trim() || "",
+      preferredContact: form.preferredContact?.trim() || "",
       occupation: form.occupation?.trim() || "",
       hobbies: form.hobbies?.trim() || "",
       interests: form.interests?.trim() || "",
@@ -487,6 +513,37 @@ function ContactForm({
             <span>Letzter Kontakt</span>
             <input type="date" value={form.lastContact ?? ""} onChange={e => update("lastContact", e.target.value || null)} />
           </label>
+          <label>
+            <span>Geburtstag</span>
+            <input type="date" value={form.birthday ?? ""} onChange={e => update("birthday", e.target.value)} />
+          </label>
+
+          <div className="social-contact-form-divider">
+            <span className="section-kicker">KONTAKTMÖGLICHKEITEN</span>
+            <strong>So erreiche ich die Person</strong>
+          </div>
+
+          <label><span>Telefon</span><input type="tel" value={form.phone ?? ""} onChange={e => update("phone", e.target.value)} placeholder="+49 …" /></label>
+          <label><span>E-Mail</span><input type="email" value={form.email ?? ""} onChange={e => update("email", e.target.value)} placeholder="name@beispiel.de" /></label>
+          <label><span>WhatsApp / Mobil</span><input type="tel" value={form.whatsapp ?? ""} onChange={e => update("whatsapp", e.target.value)} placeholder="+49 …" /></label>
+          <label>
+            <span>Bevorzugter Kontaktweg</span>
+            <select value={form.preferredContact ?? ""} onChange={e => update("preferredContact", e.target.value)}>
+              <option value="">Noch nicht festgelegt</option>
+              <option>WhatsApp</option>
+              <option>Telefon</option>
+              <option>E-Mail</option>
+              <option>Persönlich</option>
+            </select>
+          </label>
+
+          {(form.phone || form.email || form.whatsapp) ? (
+            <div className="social-contact-quick-actions">
+              {form.phone ? <a href={"tel:" + form.phone}>Anrufen</a> : null}
+              {form.email ? <a href={"mailto:" + form.email}>E-Mail</a> : null}
+              {form.whatsapp ? <a href={"https://wa.me/" + form.whatsapp.replace(/\D/g, "")} target="_blank" rel="noreferrer">WhatsApp</a> : null}
+            </div>
+          ) : null}
 
           <div className="social-contact-form-divider">
             <span className="section-kicker">PERSÖNLICHER KONTEXT</span>

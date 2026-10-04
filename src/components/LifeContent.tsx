@@ -7,12 +7,16 @@ import {
   Clock3,
   FileText,
   Home,
+  Coffee,
+  HeartHandshake,
   Lightbulb,
+  MessageCircle,
   Plane,
   RefreshCw,
   ShoppingBag,
   Sparkles,
   Users,
+  UsersRound,
   Wrench
 } from "lucide-react";
 
@@ -73,6 +77,59 @@ const upcoming = [
   { title: "Gemeinsame Planung", when: "diese Woche", icon: Users },
   { title: "Besorgung / Anschaffung", when: "bei Gelegenheit", icon: ShoppingBag }
 ];
+
+
+const socialRhythm = [
+  {
+    group: "Kernfamilie & sehr nah",
+    contact: "täglich bis 2–3× / Woche",
+    meeting: "wöchentlich"
+  },
+  {
+    group: "Enge Familie & enge Freunde",
+    contact: "1× / Woche",
+    meeting: "alle 2–3 Wochen"
+  },
+  {
+    group: "Gute Familie & gute Freunde",
+    contact: "alle 1–2 Wochen",
+    meeting: "alle 3–4 Wochen"
+  },
+  {
+    group: "Erweiterte Familie & Bekannte",
+    contact: "alle 3–4 Wochen",
+    meeting: "alle 1–2 Monate"
+  },
+  {
+    group: "Loses Umfeld",
+    contact: "anlassbezogen",
+    meeting: "gelegentlich"
+  }
+];
+
+const socialGoals = [
+  { value: "2–4", label: "aktive Kontakte pro Woche" },
+  { value: "1", label: "persönliches Treffen pro Woche" }
+];
+
+const socialAssist = [
+  {
+    title: "Kurz melden",
+    description: "JAN OS erinnert ein paar Tage vor dem gewünschten Kontaktintervall.",
+    icon: MessageCircle
+  },
+  {
+    title: "Mal wieder sehen",
+    description: "Treffen werden rechtzeitig vorgeschlagen – nicht erst, wenn Monate vergangen sind.",
+    icon: Coffee
+  },
+  {
+    title: "Ohne sozialen Score",
+    description: "Nähe steuert nur den Rhythmus. Menschen werden nicht bewertet.",
+    icon: HeartHandshake
+  }
+];
+
 
 export function LifeContent() {
   return (
@@ -150,6 +207,79 @@ export function LifeContent() {
           </div>
         </article>
       </section>
+
+
+      <section className="life-social-section">
+        <div className="life-section-title">
+          <div>
+            <span className="section-kicker">FAMILIE · FREUNDE · SOZIALES UMFELD</span>
+            <h2>Sozialer Rhythmus</h2>
+          </div>
+          <p>
+            JAN OS hilft dir aktiv beim Kontakt halten – freundlich, frühzeitig und ohne Menschen zu bewerten.
+          </p>
+        </div>
+
+        <div className="life-social-summary">
+          <div className="life-social-goals">
+            <div className="life-social-goal-head">
+              <span className="life-area-icon"><UsersRound size={20} strokeWidth={1.7} /></span>
+              <div>
+                <span className="section-kicker">WOCHENZIEL</span>
+                <h3>Beziehungen bewusst pflegen</h3>
+              </div>
+            </div>
+
+            <div className="life-social-goal-grid">
+              {socialGoals.map(goal => (
+                <div className="life-social-goal" key={goal.label}>
+                  <strong>{goal.value}</strong>
+                  <span>{goal.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="life-social-note">
+              Kurzer Kontakt und persönliches Treffen werden getrennt geplant. So bleibt der Rhythmus realistisch und natürlich.
+            </p>
+          </div>
+
+          <div className="life-social-assist">
+            {socialAssist.map(({ title, description, icon: Icon }) => (
+              <div className="life-social-assist-row" key={title}>
+                <span><Icon size={17} /></span>
+                <div>
+                  <strong>{title}</strong>
+                  <p>{description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="life-rhythm-table" role="table" aria-label="Empfohlene Kontaktfrequenzen">
+          <div className="life-rhythm-row header" role="row">
+            <span>Beziehungsnähe</span>
+            <span>Kurzer Kontakt</span>
+            <span>Treffen / längerer Kontakt</span>
+          </div>
+          {socialRhythm.map(item => (
+            <div className="life-rhythm-row" role="row" key={item.group}>
+              <strong>{item.group}</strong>
+              <span>{item.contact}</span>
+              <span>{item.meeting}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="life-social-privacy">
+          <Sparkles size={16} />
+          <span>
+            Im öffentlichen Repo stehen nur diese Regeln und Demo-Daten. Namen, letzte Kontakte und echte Erinnerungen kommen später aus der privaten Datenquelle.
+          </span>
+        </div>
+      </section>
+
 
       <section className="life-area-section">
         <div className="life-section-title">

@@ -54,6 +54,10 @@ export type HealthIntelligence = {
   generatedAt?: string;
   documents?: SmartChecklistItem[];
   packing?: SmartChecklistItem[];
+  home?: SmartChecklistItem[];
+  arrival?: SmartChecklistItem[];
+  departure?: SmartChecklistItem[];
+  questions?: SmartChecklistItem[];
   timeline?: SmartTimelineItem[];
   travel?: TravelPlan;
   facts?: ClinicFact[];

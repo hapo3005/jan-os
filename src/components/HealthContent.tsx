@@ -44,6 +44,25 @@ function checklistProgress(items: { status: string }[] = []) {
   return { done, total: items.length };
 }
 
+function readPrivateImportFromHash(): PlanningItem[] {
+  const prefix = "#jan-import=";
+  if (!window.location.hash.startsWith(prefix)) return [];
+
+  try {
+    const encoded = window.location.hash.slice(prefix.length);
+    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = window.atob(padded);
+    const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+    const decoded = new TextDecoder().decode(bytes);
+    const parsed = JSON.parse(decoded);
+    const items: PlanningItem[] = Array.isArray(parsed) ? parsed : parsed.items;
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
 export function HealthContent() {
   const [items, setItems] = useState<PlanningItem[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -57,6 +76,18 @@ export function HealthContent() {
   }
 
   useEffect(() => {
+    const imported = readPrivateImportFromHash();
+    if (imported.length) {
+      const map = new Map(readPlanningItems().map(item => [item.id, item]));
+      imported
+        .filter(item => item.source === "Gesundheit")
+        .forEach(item => map.set(item.id, item));
+      writePlanningItems(Array.from(map.values()));
+      setSelectedId(imported[0]?.id ?? null);
+      setMessage("Intelligente Vorbereitung lokal eingespielt");
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
     refresh();
     window.addEventListener(PLANNING_EVENT, refresh);
     const storageListener = (event: StorageEvent) => {

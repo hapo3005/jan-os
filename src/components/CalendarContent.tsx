@@ -10,6 +10,10 @@ import {
   Plus,
   RotateCcw,
   ShieldCheck,
+  Sparkles,
+  ExternalLink,
+  MapPin,
+  TicketCheck,
   X
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -32,6 +36,8 @@ type CalendarEvent = {
   category: "Privat" | "KISS" | "Gesundheit" | "Projekt" | "Deadline" | "Fokus";
   origin?: "manual" | "linked";
   sourceLabel?: string;
+  planningId?: string;
+  hasBriefing?: boolean;
 };
 
 const STORAGE_KEY = "jan-os-calendar-events-v1";
@@ -113,7 +119,9 @@ function planningToCalendarEvents(item: PlanningItem): CalendarEvent[] {
     end: item.end,
     category: linkedCategory(item),
     origin: "linked",
-    sourceLabel: item.location ? item.sourceLabel + " · " + item.location : item.sourceLabel
+    sourceLabel: item.location ? item.sourceLabel + " · " + item.location : item.sourceLabel,
+    planningId: item.id,
+    hasBriefing: Boolean(item.eventBriefing)
   }));
 }
 
@@ -144,6 +152,7 @@ export function CalendarContent() {
   const [ready, setReady] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [importNotice, setImportNotice] = useState("");
+  const [selectedBriefingId, setSelectedBriefingId] = useState<string | null>(null);
 
   useEffect(() => {
     function refreshLinked() {
@@ -164,7 +173,8 @@ export function CalendarContent() {
         const merged = Array.from(map.values());
         writePlanningItems(merged);
         setLinkedItems(merged);
-        setImportNotice(imported.length === 1 ? "Privater Zeitraum lokal eingetragen" : imported.length + " private Einträge lokal eingetragen");
+        setImportNotice(imported.length === 1 ? "Privater Termin lokal eingetragen" : imported.length + " private Einträge lokal eingetragen");
+        setSelectedBriefingId(imported.find(item => item.eventBriefing)?.id ?? null);
         setCursor(fromDateKey(imported[0].date));
         setView("month");
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
@@ -220,6 +230,14 @@ export function CalendarContent() {
     () => [...events.map(item => ({ ...item, origin: item.origin ?? "manual" as const })), ...linkedEvents]
       .sort((a, b) => (a.date + "T" + a.start).localeCompare(b.date + "T" + b.start)),
     [events, linkedEvents]
+  );
+
+  const briefingItem = useMemo(
+    () => linkedItems.find(item => item.id === selectedBriefingId && item.eventBriefing)
+      ?? linkedItems
+        .filter(item => item.eventBriefing && item.date >= dateKey(new Date()))
+        .sort((a, b) => a.date.localeCompare(b.date))[0],
+    [linkedItems, selectedBriefingId]
   );
 
   const today = new Date();
@@ -308,12 +326,13 @@ export function CalendarContent() {
                           type="button"
                           className={`calendar-event ${item.category.toLowerCase()}`}
                           key={item.id}
+                          onClick={() => item.planningId && item.hasBriefing ? setSelectedBriefingId(item.planningId) : undefined}
                           onDoubleClick={() => item.origin !== "linked" && deleteEvent(item.id)}
-                          title={item.origin === "linked" ? "Automatisch aus JAN OS verknüpft" : "Doppelklick zum Löschen"}
+                          title={item.hasBriefing ? "Klicken für intelligentes Briefing" : item.origin === "linked" ? "Automatisch aus JAN OS verknüpft" : "Doppelklick zum Löschen"}
                         >
                           <small>{item.start || "ganztägig"}</small>
                           <strong>{item.title}</strong>
-                          <span>{item.sourceLabel ? item.sourceLabel + " · " : ""}{item.category}{item.origin === "linked" ? " · verknüpft" : ""}</span>
+                          <span>{item.sourceLabel ? item.sourceLabel + " · " : ""}{item.category}{item.hasBriefing ? " · Briefing" : item.origin === "linked" ? " · verknüpft" : ""}</span>
                         </button>
                       )) : (
                         <span className="calendar-free">frei</span>
@@ -416,6 +435,76 @@ export function CalendarContent() {
           </div>
         </aside>
       </section>
+
+      {briefingItem?.eventBriefing ? (
+        <section className="event-briefing">
+          <div className="event-briefing-head">
+            <div>
+              <span className="section-kicker">INTELLIGENTES EVENT-BRIEFING</span>
+              <h2>{briefingItem.title}</h2>
+              <p>{briefingItem.eventBriefing.headline ?? briefingItem.eventBriefing.summary}</p>
+            </div>
+            <span className="event-briefing-badge"><Sparkles size={14} /> recherchiert</span>
+          </div>
+
+          <div className="event-briefing-grid">
+            <article className="event-briefing-card">
+              <div className="event-briefing-card-head"><TicketCheck size={18} /><strong>Das Wichtigste</strong></div>
+              <div className="event-briefing-facts">
+                {(briefingItem.eventBriefing.facts ?? []).map(fact => (
+                  <div key={fact.label}><span>{fact.label}</span><strong>{fact.value}</strong></div>
+                ))}
+              </div>
+            </article>
+
+            <article className="event-briefing-card recommendation">
+              <div className="event-briefing-card-head"><Sparkles size={18} /><strong>Meine Empfehlung</strong></div>
+              <p>{briefingItem.eventBriefing.recommendation}</p>
+              {(briefingItem.eventBriefing.tips ?? []).length ? (
+                <div className="event-briefing-tips">
+                  {(briefingItem.eventBriefing.tips ?? []).map(tip => <span key={tip}>{tip}</span>)}
+                </div>
+              ) : null}
+            </article>
+
+            {briefingItem.eventBriefing.travel ? (
+              <article className="event-briefing-card">
+                <div className="event-briefing-card-head"><MapPin size={18} /><strong>Anreise</strong></div>
+                <div className="event-briefing-travel">
+                  <div><span>Start</span><strong>{briefingItem.eventBriefing.travel.origin}</strong></div>
+                  <div><span>Ziel</span><strong>{briefingItem.eventBriefing.travel.destination}</strong></div>
+                  {briefingItem.eventBriefing.travel.routeHint ? <p>{briefingItem.eventBriefing.travel.routeHint}</p> : null}
+                  <div className="event-briefing-links">
+                    {briefingItem.eventBriefing.travel.searchUrl ? <a href={briefingItem.eventBriefing.travel.searchUrl} target="_blank" rel="noreferrer">Route prüfen <ExternalLink size={12} /></a> : null}
+                    {briefingItem.eventBriefing.travel.clinicTravelUrl ? <a href={briefingItem.eventBriefing.travel.clinicTravelUrl} target="_blank" rel="noreferrer">Veranstalter-Info <ExternalLink size={12} /></a> : null}
+                  </div>
+                </div>
+              </article>
+            ) : null}
+
+            <article className="event-briefing-card">
+              <div className="event-briefing-card-head"><CheckCircle2 size={18} /><strong>Vorher erledigen</strong></div>
+              <div className="event-briefing-checks">
+                {(briefingItem.eventBriefing.checklist ?? []).map(item => (
+                  <div key={item.id}>
+                    <span className={item.status === "done" ? "done" : ""}>{item.status === "done" ? "✓" : ""}</span>
+                    <div><strong>{item.label}</strong>{item.detail ? <small>{item.detail}</small> : null}</div>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+
+          <div className="event-briefing-footer">
+            <span>{briefingItem.eventBriefing.refreshNote ?? "Dynamische Infos werden vor dem Termin erneut geprüft."}</span>
+            <div>
+              {(briefingItem.eventBriefing.sources ?? []).map(source => (
+                <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label} <ExternalLink size={11} /></a>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="calendar-integration">
         <div>

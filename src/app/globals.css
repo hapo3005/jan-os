@@ -5393,3 +5393,32 @@ footer {
   }
   .day-browser-strip::-webkit-scrollbar { display: none; }
 }
+
+
+/* Kontakte · Geburtstag & Kontaktwege */
+.social-contact-quick-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: -1px;
+}
+.social-contact-quick-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d4e4f2;
+  border-radius: 9px;
+  background: #f1f7fc;
+  color: #3479b3;
+  font-size: 8px;
+  font-weight: 650;
+}
+.day-contact-list b.birthday {
+  color: #9a5f2a;
+  background: #fff6e8;
+  border: 1px solid #f0d8ad;
+  border-radius: 999px;
+  padding: 4px 7px;
+}

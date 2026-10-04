@@ -1,4 +1,4 @@
-export type PlanningKind = "Termin" | "Deadline" | "Fokus";
+export type PlanningKind = "Termin" | "Deadline" | "Fokus" | "Zeitraum";
 
 export type PlanningSource = "Projekt" | "KISS" | "Gesundheit" | "Leben";
 
@@ -6,11 +6,13 @@ export type PlanningItem = {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   start: string;
   end: string;
   kind: PlanningKind;
   source: PlanningSource;
   sourceLabel: string;
+  location?: string;
 };
 
 export const PLANNING_STORAGE_KEY = "jan-os-planning-items-v1";

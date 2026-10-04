@@ -37,6 +37,19 @@ export type ClinicFact = {
   value: string;
 };
 
+export type EventBriefing = {
+  generatedAt?: string;
+  headline?: string;
+  summary?: string;
+  recommendation?: string;
+  facts?: ClinicFact[];
+  tips?: string[];
+  checklist?: SmartChecklistItem[];
+  travel?: TravelPlan;
+  sources?: { label: string; url: string }[];
+  refreshNote?: string;
+};
+
 export type HealthIntelligence = {
   generatedAt?: string;
   documents?: SmartChecklistItem[];
@@ -59,6 +72,7 @@ export type PlanningItem = {
   sourceLabel: string;
   location?: string;
   intelligence?: HealthIntelligence;
+  eventBriefing?: EventBriefing;
 };
 
 export const PLANNING_STORAGE_KEY = "jan-os-planning-items-v1";

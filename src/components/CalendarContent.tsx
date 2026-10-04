@@ -38,6 +38,7 @@ type CalendarEvent = {
   sourceLabel?: string;
   planningId?: string;
   hasBriefing?: boolean;
+  tentative?: boolean;
 };
 
 const STORAGE_KEY = "jan-os-calendar-events-v1";
@@ -111,7 +112,8 @@ function linkedCategory(item: PlanningItem): CalendarEvent["category"] {
 }
 
 function planningToCalendarEvents(item: PlanningItem): CalendarEvent[] {
-  return datesBetween(item.date, item.endDate).map(day => ({
+  const days = item.dateOptions?.length ? item.dateOptions : datesBetween(item.date, item.endDate);
+  return days.map(day => ({
     id: "linked-" + item.id + "-" + day,
     title: item.title,
     date: day,
@@ -121,7 +123,8 @@ function planningToCalendarEvents(item: PlanningItem): CalendarEvent[] {
     origin: "linked",
     sourceLabel: item.location ? item.sourceLabel + " · " + item.location : item.sourceLabel,
     planningId: item.id,
-    hasBriefing: Boolean(item.eventBriefing)
+    hasBriefing: Boolean(item.eventBriefing),
+    tentative: item.status === "option"
   }));
 }
 
@@ -324,7 +327,7 @@ export function CalendarContent() {
                       {items.length ? items.map(item => (
                         <button
                           type="button"
-                          className={`calendar-event ${item.category.toLowerCase()}`}
+                          className={`calendar-event ${item.category.toLowerCase()} ${item.tentative ? "option" : ""}`}
                           key={item.id}
                           onClick={() => item.planningId && item.hasBriefing ? setSelectedBriefingId(item.planningId) : undefined}
                           onDoubleClick={() => item.origin !== "linked" && deleteEvent(item.id)}
@@ -332,7 +335,7 @@ export function CalendarContent() {
                         >
                           <small>{item.start || "ganztägig"}</small>
                           <strong>{item.title}</strong>
-                          <span>{item.sourceLabel ? item.sourceLabel + " · " : ""}{item.category}{item.hasBriefing ? " · Briefing" : item.origin === "linked" ? " · verknüpft" : ""}</span>
+                          <span>{item.tentative ? "Option · " : ""}{item.sourceLabel ? item.sourceLabel + " · " : ""}{item.category}{item.hasBriefing ? " · Briefing" : item.origin === "linked" ? " · verknüpft" : ""}</span>
                         </button>
                       )) : (
                         <span className="calendar-free">frei</span>
@@ -364,7 +367,7 @@ export function CalendarContent() {
                       <div>
                         {items.slice(0, 3).map(item => (
                           <span className={`calendar-month-event ${item.category.toLowerCase()}`} key={item.id}>
-                            {item.start ? `${item.start} · ` : ""}{item.title}{item.origin === "linked" ? " ↗" : ""}
+                            {item.tentative ? "Option · " : ""}{item.start ? `${item.start} · ` : ""}{item.title}{item.origin === "linked" ? " ↗" : ""}
                           </span>
                         ))}
                         {items.length > 3 ? <small>+{items.length - 3} weitere</small> : null}
@@ -405,7 +408,7 @@ export function CalendarContent() {
                         {item.start ? ` · ${item.start}` : ""}
                       </span>
                     </div>
-                    <small>{item.sourceLabel || item.category}</small>
+                    <small>{item.tentative ? "Option · " : ""}{item.sourceLabel || item.category}</small>
                   </div>
                 ))}
               </div>

@@ -23,6 +23,10 @@ type SocialContact = {
   closeness: string;
   frequency: string;
   lastContact: string | null;
+  occupation?: string;
+  hobbies?: string;
+  interests?: string;
+  notes?: string;
 };
 
 type ImportPayload = {
@@ -236,8 +240,18 @@ export function SocialCircle() {
     const value = query.trim().toLowerCase();
     if (!value) return enriched;
     return enriched.filter(({ contact }) =>
-      [contact.name, contact.circle, contact.relationJan, contact.relationNadine, contact.closeness, contact.frequency]
-        .some(field => field?.toLowerCase().includes(value))
+      [
+        contact.name,
+        contact.circle,
+        contact.relationJan,
+        contact.relationNadine,
+        contact.closeness,
+        contact.frequency,
+        contact.occupation,
+        contact.hobbies,
+        contact.interests,
+        contact.notes
+      ].some(field => field?.toLowerCase().includes(value))
     );
   }, [enriched, query]);
 
@@ -340,6 +354,11 @@ export function SocialCircle() {
                             {contact.relationJan || "Beziehung offen"}
                             {contact.relationNadine ? ` · Nadine: ${contact.relationNadine}` : ""}
                           </span>
+                          {contact.occupation || contact.hobbies || contact.interests ? (
+                            <small>
+                              {[contact.occupation, contact.hobbies, contact.interests].filter(Boolean).join(" · ")}
+                            </small>
+                          ) : null}
                         </button>
                         <div className="social-frequency">
                           <small>Rhythmus</small>
@@ -408,7 +427,11 @@ function ContactForm({
     relationNadine: "",
     closeness: "normal",
     frequency: "noch festlegen",
-    lastContact: null
+    lastContact: null,
+    occupation: "",
+    hobbies: "",
+    interests: "",
+    notes: ""
   });
 
   function update<K extends keyof SocialContact>(key: K, value: SocialContact[K]) {
@@ -423,7 +446,11 @@ function ContactForm({
       name: form.name.trim(),
       circle: form.circle.trim() || "Sonstige",
       relationJan: form.relationJan.trim(),
-      relationNadine: form.relationNadine.trim()
+      relationNadine: form.relationNadine.trim(),
+      occupation: form.occupation?.trim() || "",
+      hobbies: form.hobbies?.trim() || "",
+      interests: form.interests?.trim() || "",
+      notes: form.notes?.trim() || ""
     });
   }
 
@@ -460,6 +487,16 @@ function ContactForm({
             <span>Letzter Kontakt</span>
             <input type="date" value={form.lastContact ?? ""} onChange={e => update("lastContact", e.target.value || null)} />
           </label>
+
+          <div className="social-contact-form-divider">
+            <span className="section-kicker">PERSÖNLICHER KONTEXT</span>
+            <strong>Zusatzangaben</strong>
+          </div>
+
+          <label><span>Beruf</span><input value={form.occupation ?? ""} onChange={e => update("occupation", e.target.value)} placeholder="z. B. Winzer, Kaufmann, Entwickler…" /></label>
+          <label><span>Hobbies</span><input value={form.hobbies ?? ""} onChange={e => update("hobbies", e.target.value)} placeholder="z. B. Wandern, Fußball, Kochen…" /></label>
+          <label className="wide"><span>Interessen</span><input value={form.interests ?? ""} onChange={e => update("interests", e.target.value)} placeholder="Themen, über die die Person gerne spricht" /></label>
+          <label className="wide"><span>Anmerkungen</span><textarea value={form.notes ?? ""} onChange={e => update("notes", e.target.value)} placeholder="Wichtige Hinweise, Gesprächsanknüpfungspunkte, Besonderheiten…" rows={5} /></label>
         </div>
 
         <div className="social-contact-modal-actions">

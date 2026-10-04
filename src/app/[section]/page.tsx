@@ -18,6 +18,7 @@ import {
   WalletCards
 } from "lucide-react";
 import { LiveClock } from "@/components/LiveClock";
+import { LifeContent } from "@/components/LifeContent";
 
 const nav = [
   { label: "Home", href: "/", icon: Home },
@@ -225,37 +226,43 @@ export default async function SectionPage({
           </div>
         </header>
 
-        <section className="module-hero">
-          <div>
-            <p className="eyebrow">{data.eyebrow}</p>
-            <h1>{data.title}</h1>
-            <p>{data.description}</p>
-          </div>
-          <span className="module-status">{data.status}</span>
-        </section>
+        {key === "leben" ? (
+          <LifeContent />
+        ) : (
+          <>
+            <section className="module-hero">
+              <div>
+                <p className="eyebrow">{data.eyebrow}</p>
+                <h1>{data.title}</h1>
+                <p>{data.description}</p>
+              </div>
+              <span className="module-status">{data.status}</span>
+            </section>
 
-        <section className="module-page-grid">
-          {data.cards.map(([title, description, meta], index) => (
-            <article className="module-feature-card" key={title}>
-              <div className="module-card-index">0{index + 1}</div>
-              <span className="section-kicker">{meta}</span>
-              <h2>{title}</h2>
-              <p>{description}</p>
-              <button type="button">Öffnen <ChevronRight size={15} /></button>
-            </article>
-          ))}
-        </section>
+            <section className="module-page-grid">
+              {data.cards.map(([title, description, meta], index) => (
+                <article className="module-feature-card" key={title}>
+                  <div className="module-card-index">0{index + 1}</div>
+                  <span className="section-kicker">{meta}</span>
+                  <h2>{title}</h2>
+                  <p>{description}</p>
+                  <button type="button">Öffnen <ChevronRight size={15} /></button>
+                </article>
+              ))}
+            </section>
 
-        <section className="module-focus-panel">
-          <div>
-            <span className="section-kicker">DIESER BEREICH WIRD EIGENSTÄNDIG</span>
-            <h2>Eigene Funktionen statt einer überladenen Startseite.</h2>
-            <p>Die Grundnavigation steht jetzt. Die nächsten Entwicklungsschritte bauen die jeweilige Fachlogik direkt auf dieser Seite aus.</p>
-          </div>
-          <div className="module-focus-list">
-            {data.focus.map(item => <span key={item}>{item}</span>)}
-          </div>
-        </section>
+            <section className="module-focus-panel">
+              <div>
+                <span className="section-kicker">DIESER BEREICH WIRD EIGENSTÄNDIG</span>
+                <h2>Eigene Funktionen statt einer überladenen Startseite.</h2>
+                <p>Die Grundnavigation steht jetzt. Die nächsten Entwicklungsschritte bauen die jeweilige Fachlogik direkt auf dieser Seite aus.</p>
+              </div>
+              <div className="module-focus-list">
+                {data.focus.map(item => <span key={item}>{item}</span>)}
+              </div>
+            </section>
+          </>
+        )}
 
         <footer>
           <span>JAN OS · Bereich {data.title}</span>

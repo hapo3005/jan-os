@@ -23,6 +23,7 @@ import { CalendarContent } from "@/components/CalendarContent";
 import { ProjectsContent } from "@/components/ProjectsContent";
 import { HealthContent } from "@/components/HealthContent";
 import { FinanceContent } from "@/components/FinanceContent";
+import { GoalsContent } from "@/components/GoalsContent";
 
 const nav = [
   { label: "Home", href: "/", icon: Home },
@@ -240,6 +241,8 @@ export default async function SectionPage({
           <HealthContent />
         ) : key === "finanzen" ? (
           <FinanceContent />
+        ) : key === "ziele" ? (
+          <GoalsContent />
         ) : (
           <>
             <section className="module-hero">

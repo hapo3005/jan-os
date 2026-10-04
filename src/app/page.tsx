@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Activity,
   Bell,
@@ -21,20 +22,20 @@ import { LiveClock } from "@/components/LiveClock";
 import { attentionItems, projects } from "@/data/dashboard";
 
 const nav = [
-  { label: "Home", icon: Home, active: true },
-  { label: "Leben", icon: Heart },
-  { label: "Gesundheit & Fitness", icon: Activity },
-  { label: "Finanzen", icon: CircleDollarSign },
-  { label: "KISS", icon: LayoutGrid },
-  { label: "Projekte", icon: FolderKanban },
-  { label: "Ziele", icon: Target }
+  { label: "Home", href: "/", icon: Home, active: true },
+  { label: "Leben", href: "/leben", icon: Heart },
+  { label: "Gesundheit & Fitness", href: "/gesundheit", icon: Activity },
+  { label: "Finanzen", href: "/finanzen", icon: CircleDollarSign },
+  { label: "KISS", href: "/kiss", icon: LayoutGrid },
+  { label: "Projekte", href: "/projekte", icon: FolderKanban },
+  { label: "Ziele", href: "/ziele", icon: Target }
 ];
 
 const utilityNav = [
-  { label: "Kalender", icon: CalendarDays },
-  { label: "Notizen", icon: NotebookText },
-  { label: "Wissen", icon: Sparkles },
-  { label: "Tools", icon: WalletCards }
+  { label: "Kalender", href: "/kalender", icon: CalendarDays },
+  { label: "Notizen", href: "/notizen", icon: NotebookText },
+  { label: "Wissen", href: "/wissen", icon: Sparkles },
+  { label: "Tools", href: "/tools", icon: WalletCards }
 ];
 
 export default function HomePage() {
@@ -44,26 +45,26 @@ export default function HomePage() {
         <div className="brand">JAN OS</div>
 
         <nav className="nav-list" aria-label="Hauptnavigation">
-          {nav.map(({ label, icon: Icon, active }) => (
-            <a
+          {nav.map(({ label, href, icon: Icon, active }) => (
+            <Link
               key={label}
-              href={active ? "#top" : "#modules"}
+              href={href}
               className={active ? "nav-item active" : "nav-item"}
             >
               <Icon size={18} strokeWidth={1.8} />
               <span>{label}</span>
-            </a>
+            </Link>
           ))}
         </nav>
 
         <div className="sidebar-divider" />
 
         <nav className="nav-list utility" aria-label="Werkzeuge">
-          {utilityNav.map(({ label, icon: Icon }) => (
-            <a key={label} href="#modules" className="nav-item">
+          {utilityNav.map(({ label, href, icon: Icon }) => (
+            <Link key={label} href={href} className="nav-item">
               <Icon size={18} strokeWidth={1.8} />
               <span>{label}</span>
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -194,11 +195,11 @@ export default function HomePage() {
         </section>
 
         <section className="module-strip" id="modules">
-          {nav.slice(1).map(({ label, icon: Icon }) => (
-            <a href="#projects" key={label}>
+          {nav.slice(1).map(({ label, href, icon: Icon }) => (
+            <Link href={href} key={label}>
               <Icon size={18} />
               <span>{label}</span>
-            </a>
+            </Link>
           ))}
         </section>
 
@@ -208,7 +209,7 @@ export default function HomePage() {
               <span className="section-kicker">Projektzentrale</span>
               <h2>Aktive Bereiche</h2>
             </div>
-            <button className="text-button">Projektübersicht <ChevronRight size={17} /></button>
+            <Link className="text-button" href="/projekte">Projektübersicht <ChevronRight size={17} /></Link>
           </div>
 
           <div className="projects-grid">

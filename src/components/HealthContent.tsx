@@ -4,8 +4,10 @@ import {
   CalendarRange,
   CheckCircle2,
   MapPin,
+  Pencil,
   Plus,
   ShieldCheck,
+  Trash2,
   Upload,
   X
 } from "lucide-react";
@@ -34,6 +36,7 @@ function formatDate(value: string) {
 export function HealthContent() {
   const [items, setItems] = useState<PlanningItem[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<PlanningItem | null>(null);
   const [message, setMessage] = useState("");
 
   function refresh() {
@@ -58,12 +61,27 @@ export function HealthContent() {
     [items]
   );
 
-  function addItem(item: PlanningItem) {
+  function saveItem(item: PlanningItem) {
     const all = readPlanningItems();
     const next = [...all.filter(existing => existing.id !== item.id), item];
     writePlanningItems(next);
     refresh();
     setShowForm(false);
+    setEditingItem(null);
+  }
+
+  function editItem(item: PlanningItem) {
+    setEditingItem(item);
+    setShowForm(true);
+  }
+
+  function deleteItem(id: string) {
+    writePlanningItems(readPlanningItems().filter(item => item.id !== id));
+    refresh();
+    if (editingItem?.id === id) {
+      setEditingItem(null);
+      setShowForm(false);
+    }
   }
 
   async function importPrivate(event: ChangeEvent<HTMLInputElement>) {
@@ -105,7 +123,7 @@ export function HealthContent() {
             <Upload size={15} /> Private Planung laden
             <input type="file" accept=".json,application/json" onChange={importPrivate} />
           </label>
-          <button type="button" onClick={() => setShowForm(true)}>
+          <button type="button" onClick={() => { setEditingItem(null); setShowForm(true); }}>
             <Plus size={15} /> Zeitraum hinzufügen
           </button>
         </div>
@@ -136,6 +154,14 @@ export function HealthContent() {
                   <strong>{item.sourceLabel}</strong>
                   {item.location ? <span><MapPin size={12} /> {item.location}</span> : null}
                 </div>
+                <div className="health-period-actions">
+                  <button type="button" onClick={() => editItem(item)}>
+                    <Pencil size={13} /> Bearbeiten
+                  </button>
+                  <button type="button" className="danger" onClick={() => deleteItem(item.id)} aria-label={item.title + " löschen"}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
                 <span className="health-period-status"><CheckCircle2 size={14} /> Kalender</span>
               </article>
             ))}
@@ -152,31 +178,37 @@ export function HealthContent() {
       </section>
 
       {showForm ? (
-        <HealthPeriodForm onClose={() => setShowForm(false)} onSave={addItem} />
+        <HealthPeriodForm
+          initialItem={editingItem}
+          onClose={() => { setShowForm(false); setEditingItem(null); }}
+          onSave={saveItem}
+        />
       ) : null}
     </>
   );
 }
 
 function HealthPeriodForm({
+  initialItem,
   onClose,
   onSave
 }: {
+  initialItem: PlanningItem | null;
   onClose: () => void;
   onSave: (item: PlanningItem) => void;
 }) {
-  const [title, setTitle] = useState("");
-  const [sourceLabel, setSourceLabel] = useState("");
-  const [location, setLocation] = useState("");
-  const [date, setDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [title, setTitle] = useState(initialItem?.title ?? "");
+  const [sourceLabel, setSourceLabel] = useState(initialItem?.sourceLabel ?? "");
+  const [location, setLocation] = useState(initialItem?.location ?? "");
+  const [date, setDate] = useState(initialItem?.date ?? "");
+  const [endDate, setEndDate] = useState(initialItem?.endDate ?? "");
 
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim() || !date || !endDate) return;
 
     onSave({
-      id: makeId(),
+      id: initialItem?.id ?? makeId(),
       title: title.trim(),
       date,
       endDate,
@@ -195,7 +227,7 @@ function HealthPeriodForm({
         <div className="calendar-modal-head">
           <div>
             <span className="section-kicker">GESUNDHEIT → KALENDER</span>
-            <h2>Zeitraum eintragen</h2>
+            <h2>{initialItem ? "Zeitraum bearbeiten" : "Zeitraum eintragen"}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Schließen"><X size={18} /></button>
         </div>
@@ -228,7 +260,7 @@ function HealthPeriodForm({
 
         <div className="calendar-modal-actions">
           <button type="button" onClick={onClose}>Abbrechen</button>
-          <button type="submit"><Plus size={14} /> Eintragen</button>
+          <button type="submit">{initialItem ? <CheckCircle2 size={14} /> : <Plus size={14} />} {initialItem ? "Änderungen speichern" : "Eintragen"}</button>
         </div>
       </form>
     </div>

@@ -41,6 +41,11 @@ type SocialContact = {
   closeness: string;
   frequency: string;
   lastContact: string | null;
+  birthday?: string;
+  phone?: string;
+  email?: string;
+  whatsapp?: string;
+  preferredContact?: string;
 };
 
 type FinanceRecurring = {
@@ -134,6 +139,13 @@ function sourceHref(source: string) {
 }
 
 function contactState(contact: SocialContact, referenceDate: Date) {
+  if (contact.birthday) {
+    const birthday = fromDateKey(contact.birthday);
+    if (birthday.getDate() === referenceDate.getDate() && birthday.getMonth() === referenceDate.getMonth()) {
+      return { key: "birthday", label: "Geburtstag", days: 0 };
+    }
+  }
+
   const cadence = cadenceDays[contact.frequency];
   if (!cadence || !contact.lastContact) return null;
   const last = new Date(contact.lastContact + "T12:00:00");
@@ -337,7 +349,10 @@ export function DayOverview() {
     () => contacts
       .map(contact => ({ contact, state: contactState(contact, selectedDate) }))
       .filter((item): item is { contact: SocialContact; state: { key: string; label: string; days: number } } => Boolean(item.state))
-      .sort((a, b) => (a.state.key === "due" ? 0 : 1) - (b.state.key === "due" ? 0 : 1) || b.state.days - a.state.days)
+      .sort((a, b) => {
+        const rank = (key: string) => key === "birthday" ? 0 : key === "due" ? 1 : 2;
+        return rank(a.state.key) - rank(b.state.key) || b.state.days - a.state.days;
+      })
       .slice(0, 4),
     [contacts, selectedKey]
   );
@@ -556,7 +571,13 @@ export function DayOverview() {
                 {socialFocus.map(({ contact, state }) => (
                   <Link href="/leben/#menschen" key={contact.name}>
                     <span className="day-avatar">{contact.name.slice(0, 1).toUpperCase()}</span>
-                    <div><strong>{contact.name}</strong><small>{contact.relationJan || contact.circle}</small></div>
+                    <div>
+                      <strong>{contact.name}</strong>
+                      <small>
+                        {contact.relationJan || contact.circle}
+                        {contact.preferredContact ? " · " + contact.preferredContact : ""}
+                      </small>
+                    </div>
                     <b className={state.key}>{state.label}</b>
                   </Link>
                 ))}
